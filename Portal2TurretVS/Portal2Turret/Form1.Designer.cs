@@ -63,6 +63,7 @@
             Controls.Add(button1);
             Name = "SnapshotTest";
             Text = "SnapshotTest";
+            Load += SnapshotTest_Load_1;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
         }

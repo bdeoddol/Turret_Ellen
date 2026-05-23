@@ -28,12 +28,17 @@ namespace Portal2Turret
             _capture.Read(_image); //read the image of the curr frame from the camera
             if (_image.Empty()) { return; }
             pictureBox1.Image = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(_image); //convert the mat to a bit map and display in the pic box
-                /* note that the frame of teh camera within the pictureBox 
-                 * will always display starting from the top leftmera corner,
-                 * similar to html when an image is too small for a container */
+            /* note that the frame of teh camera within the pictureBox 
+             * will always display starting from the top leftmera corner,
+             * similar to html when an image is too small for a container */
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void SnapshotTest_Load_1(object sender, EventArgs e)
         {
 
         }
