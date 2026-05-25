@@ -3,7 +3,8 @@
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="Portal2Turret/Portal2Turret.csproj">
+  <Project Path="LiveTest/LiveTest.csproj" Id="04001d4d-4230-498d-80cc-bab8c434725e" />
+  <Project Path="SnapshotTest/SnapshotTest.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
 </Solution>
