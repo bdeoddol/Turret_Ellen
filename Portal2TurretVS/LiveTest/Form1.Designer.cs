@@ -48,11 +48,13 @@
             // 
             // pictureBox1
             // 
-            pictureBox1.Anchor = AnchorStyles.Left;
+            pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pictureBox1.BackColor = SystemColors.Control;
             pictureBox1.InitialImage = null;
-            pictureBox1.Location = new Point(209, 20);
+            pictureBox1.Location = new Point(209, 12);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(643, 451);
+            pictureBox1.Size = new Size(667, 498);
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
             pictureBox1.Click += pictureBox1_Click;
@@ -81,17 +83,20 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(872, 490);
+            ClientSize = new Size(888, 529);
             Controls.Add(DisconnectCamera);
             Controls.Add(ConnectCamera);
             Controls.Add(pictureBox1);
             Controls.Add(StartStream);
-            MinimumSize = new Size(816, 489);
+            MinimumSize = new Size(888, 529);
             Name = "Form1";
             Text = "Form1";
+            TopMost = true;
+            WindowState = FormWindowState.Minimized;
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
