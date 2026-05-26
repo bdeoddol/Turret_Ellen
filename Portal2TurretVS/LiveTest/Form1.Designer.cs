@@ -28,20 +28,23 @@
         /// </summary>
         private void InitializeComponent()
         {
-            button1 = new Button();
+            StartStream = new Button();
             pictureBox1 = new PictureBox();
+            saveFileDialog1 = new SaveFileDialog();
+            ConnectCamera = new Button();
+            DisconnectCamera = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
-            // button1
+            // StartStream
             // 
-            button1.Location = new Point(12, 12);
-            button1.Name = "button1";
-            button1.Size = new Size(165, 46);
-            button1.TabIndex = 0;
-            button1.Text = "button1";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
+            StartStream.Location = new Point(12, 65);
+            StartStream.Name = "StartStream";
+            StartStream.Size = new Size(165, 46);
+            StartStream.TabIndex = 0;
+            StartStream.Text = "Start Stream";
+            StartStream.UseVisualStyleBackColor = true;
+            StartStream.Click += StartStream_Click;
             // 
             // pictureBox1
             // 
@@ -51,13 +54,35 @@
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
             // 
+            // ConnectCamera
+            // 
+            ConnectCamera.Location = new Point(12, 12);
+            ConnectCamera.Name = "ConnectCamera";
+            ConnectCamera.Size = new Size(79, 47);
+            ConnectCamera.TabIndex = 2;
+            ConnectCamera.Text = "Connect Camera";
+            ConnectCamera.UseVisualStyleBackColor = true;
+            ConnectCamera.Click += ConnectCamera_Click;
+            // 
+            // DisconnectCamera
+            // 
+            DisconnectCamera.Location = new Point(97, 12);
+            DisconnectCamera.Name = "DisconnectCamera";
+            DisconnectCamera.Size = new Size(79, 47);
+            DisconnectCamera.TabIndex = 3;
+            DisconnectCamera.Text = "Disconnect Camera";
+            DisconnectCamera.UseVisualStyleBackColor = true;
+            DisconnectCamera.Click += DisconnectCamera_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(DisconnectCamera);
+            Controls.Add(ConnectCamera);
             Controls.Add(pictureBox1);
-            Controls.Add(button1);
+            Controls.Add(StartStream);
             Name = "Form1";
             Text = "Form1";
             Load += Form1_Load;
@@ -67,7 +92,10 @@
 
         #endregion
 
-        private Button button1;
+        private Button StartStream;
         private PictureBox pictureBox1;
+        private SaveFileDialog saveFileDialog1;
+        private Button ConnectCamera;
+        private Button DisconnectCamera;
     }
 }
