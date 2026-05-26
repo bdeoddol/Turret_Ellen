@@ -37,20 +37,20 @@ namespace LiveTest
         private void Form1_Closed(object? sender, EventArgs e)
         {
             //once form is closed, release other resources
-            if(_captures != null)
+            if (_captures != null)
             {
                 _captures?.Release();
                 _captures?.Dispose();
             }
-            if(_frame != null)
+            if (_frame != null)
             {
                 _frame?.Dispose();
                 _frame = null;
             }
         }
 
-        private void Form1_FormClosing(object? sender, FormClosingEventArgs e) 
-            //kill the worker as we are closing the form, otherwise it will keep running in the background and cause memory leaks
+        private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
+        //kill the worker as we are closing the form, otherwise it will keep running in the background and cause memory leaks
         {
             _running = false;
             _alive = false;
@@ -77,14 +77,14 @@ namespace LiveTest
                         pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
                     }
                 }
-                
+
             }
             return;
         }
 
         private void swapFrames()
         {
-            
+
             if (!_alive || _frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
@@ -96,7 +96,11 @@ namespace LiveTest
         private void StartStream_Click(object sender, EventArgs e) //toggle
         {
             if (_running == true) { _running = false; }
-            else { _running = true; }
+            else
+            {
+                pictureBox1.Show();
+                _running = true;
+            }
 
 
             return;
@@ -125,7 +129,7 @@ namespace LiveTest
             _running = false;
             _alive = false;
 
-            if (_worker != null && _worker.IsAlive) {_worker.Join(500);}
+            if (_worker != null && _worker.IsAlive) { _worker.Join(500); }
             _captures?.Release();
             _captures?.Dispose();
             _captures = null;
@@ -133,6 +137,7 @@ namespace LiveTest
             _frame?.Dispose();
             _frame = null;
 
+            pictureBox1.Hide();
             SetCameraButtonActive();
             return;
         }
@@ -153,5 +158,9 @@ namespace LiveTest
             StartStream.Visible = false;
         }
 
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
