@@ -28,16 +28,10 @@ namespace LiveTest
 
         private void Form1_Load(object? sender, EventArgs e)
         {
-            ConnectCamera.Enabled = true;
-            DisconnectCamera.Enabled = false;
-            StartStream.Enabled = false;
-            StartStream.Visible = false;
+            SetCameraButtonActive();
 
             _running = false;
-            _worker = new Thread(new ThreadStart(Stream));
-            _worker.IsBackground = true;
-            _alive = true;
-            _worker.Start();
+            _worker?.IsBackground = true;
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -50,8 +44,8 @@ namespace LiveTest
             }
             if(_frame != null)
             {
-                _frame?.Release();
                 _frame?.Dispose();
+                _frame = null;
             }
         }
 
@@ -73,14 +67,14 @@ namespace LiveTest
                 Thread.Sleep(100);
                 if (_running == true)
                 {
-                    if (_frame == null || _captures == null || !_captures.IsOpened()) { continue; }
+                    if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
 
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
                         //we basically delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
-                        pictureBox1.Invoke(new Action(swapFrames));
+                        pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
                     }
                 }
                 
@@ -90,7 +84,8 @@ namespace LiveTest
 
         private void swapFrames()
         {
-            if (_frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; }
+            
+            if (!_alive || _frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
             _displayFrame = BitmapConverter.ToBitmap(_frame);
@@ -120,10 +115,8 @@ namespace LiveTest
             _alive = true;
             _worker.Start();
 
-            ConnectCamera.Enabled = false;
-            DisconnectCamera.Enabled = true;
-            StartStream.Enabled = true;
-            StartStream.Visible = true;
+
+            SetDisconnectButtonActive();
             return;
         }
 
@@ -140,11 +133,25 @@ namespace LiveTest
             _frame?.Dispose();
             _frame = null;
 
+            SetCameraButtonActive();
+            return;
+        }
+
+        private void SetDisconnectButtonActive()
+        {
+            ConnectCamera.Enabled = false;
+            DisconnectCamera.Enabled = true;
+            StartStream.Enabled = true;
+            StartStream.Visible = true;
+        }
+
+        private void SetCameraButtonActive()
+        {
             ConnectCamera.Enabled = true;
             DisconnectCamera.Enabled = false;
             StartStream.Enabled = false;
             StartStream.Visible = false;
-            return;
         }
+
     }
 }
