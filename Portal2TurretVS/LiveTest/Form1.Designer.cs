@@ -88,7 +88,7 @@
             Controls.Add(ConnectCamera);
             Controls.Add(pictureBox1);
             Controls.Add(StartStream);
-            MinimumSize = new Size(888, 529);
+            MinimumSize = new Size(904, 568);
             Name = "Form1";
             Text = "Form1";
             TopMost = true;
