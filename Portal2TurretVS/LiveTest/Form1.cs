@@ -12,7 +12,7 @@ namespace LiveTest
         //via https://elbruno.com/2020/11/16/dotnet-display-the-%F0%9F%8E%A6-camera-feed-in-a-winform-using-opencv-and-net5/
 
         private VideoCapture? _captures;
-        private Mat? _frame = new Mat();
+        private Mat? _frame;
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
         private bool _running;
@@ -28,6 +28,8 @@ namespace LiveTest
 
         private void Form1_Load(object? sender, EventArgs e)
         {
+            _frame = new Mat();
+            _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
             SetCameraButtonActive();
 
             _running = false;
