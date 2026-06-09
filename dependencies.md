@@ -7,3 +7,9 @@ opencvsharp extensions
 opencvsharp runtime
 
 install arduino
+
+install ultralytics packages
+install pytroch for python
+install CUDA 12.9
+install cuDNN for 12.x
+install ONNX Runtime for C#

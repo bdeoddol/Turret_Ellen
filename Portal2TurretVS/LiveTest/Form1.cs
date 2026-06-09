@@ -5,6 +5,11 @@ using OpenCvSharp.Extensions;
 using System.Threading;
 using System.Text;
 
+
+using Microsoft.ML.OnnxRuntime;
+using System.Numerics.Tensors;
+using System.Runtime.InteropServices.Marshalling;
+
 namespace LiveTest
 {
     public partial class Form1 : Form
@@ -18,6 +23,8 @@ namespace LiveTest
         private bool _running;
         private bool _alive;
         private Thread? _worker;
+
+        private InferenceSession _currModel;
         public Form1()
         {
             InitializeComponent();
@@ -29,11 +36,12 @@ namespace LiveTest
         private void Form1_Load(object? sender, EventArgs e)
         {
             _frame = new Mat();
-            _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
             SetCameraButtonActive();
 
             _running = false;
             _worker?.IsBackground = true;
+
+            using var _currModel = new InferenceSession(/*path to onnx model*/);
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -70,7 +78,12 @@ namespace LiveTest
                 if (_running == true)
                 {
                     if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
+                    _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
                     _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
+
+
+
+                    //capture the frame, process it within the InferenceSession, return the output
 
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
