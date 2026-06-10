@@ -2,15 +2,18 @@ install
 opencv-python
 
 install OpenCVsharp (c# OpenCV)
-opencvsharp
-opencvsharp extensions
-opencvsharp runtime
+opencvsharp for C#
+opencvsharp extensions for C#
+opencvsharp runtime for C#
 
 install arduino
 
 install ultralytics packages
 install pytorch for python
-install onnx/onnxscript
 install CUDA 12.9
 install cuDNN for 12.x
+
+install onnx/onnxscript for python
 install ONNX Runtime for C#
+isntall ONNX Runtime GPU for C# (optional)
+install ONNX for C#

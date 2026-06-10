@@ -9,6 +9,10 @@ using System.Text;
 using Microsoft.ML.OnnxRuntime;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices.Marshalling;
+using System.Collections.Specialized;
+using OpenCvSharp.Dnn;
+
+
 
 namespace LiveTest
 {
@@ -41,7 +45,7 @@ namespace LiveTest
             _running = false;
             _worker?.IsBackground = true;
 
-            using var _currModel = new InferenceSession(/*path to onnx model*/);
+            //using var _currModel = new InferenceSession(/*path to onnx model*/);
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -78,9 +82,10 @@ namespace LiveTest
                 if (_running == true)
                 {
                     if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
-                    _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
                     _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
+                    _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
 
+                    System.Diagnostics.Debug.WriteLine(_frame);
 
 
                     //capture the frame, process it within the InferenceSession, return the output
@@ -103,6 +108,7 @@ namespace LiveTest
             if (!_alive || _frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
+            _frame.ConvertTo(_frame, MatType.CV_8U);
             _displayFrame = BitmapConverter.ToBitmap(_frame);
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
