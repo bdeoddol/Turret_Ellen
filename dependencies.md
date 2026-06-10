@@ -9,7 +9,8 @@ opencvsharp runtime
 install arduino
 
 install ultralytics packages
-install pytroch for python
+install pytorch for python
+install onnx/onnxscript
 install CUDA 12.9
 install cuDNN for 12.x
 install ONNX Runtime for C#

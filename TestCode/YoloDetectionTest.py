@@ -6,7 +6,7 @@ from ultralytics import YOLO
 model = YOLO("yolo26n.pt")
 
 # Run inference on 'bus.jpg'
-results = model(["https://ultralytics.com/images/bus.jpg", "https://ultralytics.com/images/zidane.jpg"])  # results list
+results = model("testImgs/magazine.jpg")  # results list
 
 # Visualize the results
 for i, r in enumerate(results):
