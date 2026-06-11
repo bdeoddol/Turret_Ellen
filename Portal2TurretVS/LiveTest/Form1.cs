@@ -14,6 +14,7 @@ using OpenCvSharp.Dnn;
 
 
 
+
 namespace LiveTest
 {
     public partial class Form1 : Form
@@ -28,7 +29,7 @@ namespace LiveTest
         private bool _alive;
         private Thread? _worker;
 
-        private InferenceSession _currModel;
+        private InferenceSession _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
         public Form1()
         {
             InitializeComponent();
@@ -83,9 +84,9 @@ namespace LiveTest
                 {
                     if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
-                    _frame.ConvertTo(_frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
 
-                    System.Diagnostics.Debug.WriteLine(_frame);
+
+                    preProcessFrame(_frame); //TODO: implement method
 
 
                     //capture the frame, process it within the InferenceSession, return the output
@@ -182,6 +183,18 @@ namespace LiveTest
         private void pictureBox1_Click(object sender, EventArgs e)
         {
             
+        }
+
+        private void preProcessFrame(Mat frame)
+        {
+            float[] retFrame;
+            frame.ConvertTo(frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
+            frame = CvDnn.BlobFromImage(frame, 1, default,default, true, false); //convert to 4d matrix with dimensions (1, 3, height, width), swap RB channels, and do not crop the image (BCHW)
+            //flatten array and convert to tensor
+            frame = frame.Reshape(1, 1);
+            
+
+
         }
     }
 }
