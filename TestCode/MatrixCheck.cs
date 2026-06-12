@@ -1,37 +1,51 @@
 using OpenCvSharp;
-class TestOCV{
-    public static void Run()
+class MatrixCheck{
+    public static void Run(string filepath)
     {
-        Mat? frame = Cv2.ImRead("../testImgs/magazine.jpg");
+        Mat frame = Cv2.ImRead(filepath);
         byte? blue;
         byte? green;
         byte? red;
-        int col;
-        int row;
+        int col=0;
+        int row=0;
+        int frameRows = frame.Rows;
+        int frameCols = frame.Cols;
 
-        for (row = 0; row < frame.Rows; row++)
+        Console.WriteLine(frame);
+        for (row = 0; row < frameRows; row++)
         {
-            Console.Write("[");
-            for (col = 0; col < frame.Cols; col++)
+            if(row % 100 == 0)
             {
-                if(col % 100 == 0)
+            //print every 100th row
+                Console.Write("[");
+                for (col = 0; col < frameCols; col++)
                 {
-                    //for every tenth pixel, print the bgr values
-                    Vec3b pixels = frame.At<Vec3b>(row, col);
-                    blue = pixels.Item0;
-                    green = pixels.Item1;
-                    red = pixels.Item2;
+                    if(col % 100 == 0)
+                    {
+                        //for every tenth pixel, print the bgr values
+                        Vec3b pixels = frame.At<Vec3b>(row, col);
+                        blue = pixels.Item0;
+                        green = pixels.Item1;
+                        red = pixels.Item2;
 
-                    Console.Write("[" + blue + " " + green + " " + red + "]");
-                    Console.Write("...");
+                        Console.Write("[" + blue + " " + green + " " + red + "] num col: " + col);
+                        Console.WriteLine("...");
+                    }
+                    // Use At<byte> for 8-bit unsigned matrices
                 }
-                // Use At<byte> for 8-bit unsigned matrices
-            }
-            Console.WriteLine("num col: " + col); //verify num col
-            Console.WriteLine("]");
+            }       
         }
-
-        Console.WriteLine("num rows: " + row); //verify num rows
+        Console.WriteLine("Total num cols: " + col);
+        Console.WriteLine("Total num rows: " + row); //verify num rows
         Console.WriteLine(frame.Size());
+        Console.WriteLine(frame);
+        Console.WriteLine("Total channels: " + frame.Channels());
+        Console.WriteLine("Total num rows: " + frame.Size(0));
+        Console.WriteLine("Total num cols: " + frame.Size(1)); //verify num rows
+        Console.WriteLine("Total dims: " + frame.Dims);
+        Console.WriteLine("Mat Type: " + frame.Type());
+
+
+        
     }
 }

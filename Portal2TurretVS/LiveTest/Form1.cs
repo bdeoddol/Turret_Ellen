@@ -109,7 +109,7 @@ namespace LiveTest
             if (!_alive || _frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
-            _frame.ConvertTo(_frame, MatType.CV_8U);
+            // _frame.ConvertTo(_frame, MatType.CV_8U);
             _displayFrame = BitmapConverter.ToBitmap(_frame);
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
@@ -187,8 +187,8 @@ namespace LiveTest
 
         private void preProcessFrame(Mat frame)
         {
-            float[] retFrame;
-            frame.ConvertTo(frame, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
+            Mat retframe = frame;
+            // frame.ConvertTo(retframe, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
             frame = CvDnn.BlobFromImage(frame, 1, default,default, true, false); //convert to 4d matrix with dimensions (1, 3, height, width), swap RB channels, and do not crop the image (BCHW)
             //flatten array and convert to tensor
             frame = frame.Reshape(1, 1);

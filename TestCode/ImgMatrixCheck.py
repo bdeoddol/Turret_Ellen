@@ -2,7 +2,7 @@ import cv2 as cv
 
 
 
-img = cv.imread("testImgs/sampleWebcam.jpg") 
+img = cv.imread("testImgs/magazine.jpg") 
 print(img)
 print(img.shape)
 
