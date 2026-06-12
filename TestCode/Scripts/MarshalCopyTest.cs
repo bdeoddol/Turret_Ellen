@@ -1,4 +1,4 @@
-class MarshalCopyTest
+class MarshalCopyTestgit
 {
     public static void Run()
     {
@@ -6,4 +6,4 @@ class MarshalCopyTest
 
 
     }
-}
+}git
