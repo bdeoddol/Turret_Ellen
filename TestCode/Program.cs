@@ -5,7 +5,7 @@ class Program
     {
         //main Benchmark entrypoint
         //change program name/ filepath accordingly
-        MatrixBlob.Run("../testImgs/magazine.jpg");
+        PreprocessingTest.Run("../testImgs/magazine.jpg");
 
         return 0;
     }

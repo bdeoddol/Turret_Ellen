@@ -37,9 +37,9 @@ class MatrixBlob
         Console.WriteLine("Flattened Total dims: " + flattened.Dims);
         Console.WriteLine("Flattened Blobbed Frame Mat Type: " + flattened.Type());
 
-
+        int totalCols = flattened.Cols;
         int col;
-         for(col = 0; col < flattened.Cols; col++)
+         for(col = 0; col < totalCols; col++)
             {
               if(col % 10000 == 0)
                 {
