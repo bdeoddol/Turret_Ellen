@@ -25,7 +25,7 @@ class PreprocessingTest
             Console.Write(dimensions[i] + " ");
         }
     }
-    private static float[] prepareSource(Mat frame)
+    public static float[] prepareSource(Mat frame)
     {
         Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1, default, default, true, false);
         Mat flattened = blobbed_frame.Reshape(1,1);
@@ -37,7 +37,7 @@ class PreprocessingTest
 
         return retArray;
     }
-    private static long[] prepareShape(Mat frame)
+    public static long[] prepareShape(Mat frame)
     {
         Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1, default, default, true, false);
         int dims = blobbed_frame.Dims;

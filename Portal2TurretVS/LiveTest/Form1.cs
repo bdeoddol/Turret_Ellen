@@ -25,11 +25,16 @@ namespace LiveTest
         private Mat? _frame;
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
+
         private bool _running;
         private bool _alive;
         private Thread? _worker;
 
         private InferenceSession _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
+        private Preprocessing helperClass;
+        private float[] src;
+        private long[] shape;
+
         public Form1()
         {
             InitializeComponent();
@@ -41,12 +46,13 @@ namespace LiveTest
         private void Form1_Load(object? sender, EventArgs e)
         {
             _frame = new Mat();
+            helperClass = new Preprocessing();
             SetCameraButtonActive();
 
             _running = false;
             _worker?.IsBackground = true;
 
-            //using var _currModel = new InferenceSession(/*path to onnx model*/);
+            //_currModel = new InferenceSession("../../TestAssets/yolo26m.onnx"); TODO
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -86,8 +92,9 @@ namespace LiveTest
                     _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
 
 
-                    preProcessFrame(_frame); //TODO: implement method
-
+                    src = helperClass.prepareSrc(_frame); //TODO: implement method
+                    shape = helperClass.prepareShape(_frame);
+                        
 
                     //capture the frame, process it within the InferenceSession, return the output
 
@@ -185,16 +192,12 @@ namespace LiveTest
             
         }
 
-        private void preProcessFrame(Mat frame)
-        {
-            Mat retframe = frame;
-            // frame.ConvertTo(retframe, MatType.CV_32F); //convert the frame_ matrix into a 32-bit float type casted to int = 5;
-            frame = CvDnn.BlobFromImage(frame, 1, default,default, true, false); //convert to 4d matrix with dimensions (1, 3, height, width), swap RB channels, and do not crop the image (BCHW)
-            //flatten array and convert to tensor
-            frame = frame.Reshape(1, 1);
-            
+        //private void performInference(float[] src, long[] shape, InferenceSession model) TODO
+        //{
+        //    using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(src, shape);
+        //    using var runOptions = new RunOptions();
 
 
-        }
+        //}
     }
 }
