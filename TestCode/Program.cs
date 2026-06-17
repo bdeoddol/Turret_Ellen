@@ -6,7 +6,7 @@ class Program
         //main Benchmark entrypoint
         //change program name/ filepath accordingly
         // PreprocessingTest.Run("../testImgs/magazine.jpg");do
-        ModelInfo.Run("../TestAssets/yolo26m.onnx");
+        PerformInferencing.Run("../TestAssets/yolo26m.onnx", "../testImgs/imrs-sampleWebcam.jpg");
 
         return 0;
     }
