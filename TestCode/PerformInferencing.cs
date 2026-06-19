@@ -5,8 +5,10 @@ using System.Numerics;
 using System.Numerics.Tensors;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
+using OpenCvSharp.ML;
 
 
 class PerformInferencing
@@ -15,6 +17,7 @@ class PerformInferencing
     {
         IDisposableReadOnlyCollection<OrtValue> sampleOutput;
         InferenceSession currmodel = new InferenceSession(modelpath);
+                
 
         Mat frame = Cv2.ImRead(imgPath); //image resized(images are required to fit a dimension divisible by 32)
         float[] src = PreprocessingTest.prepareSource(frame);
@@ -25,8 +28,9 @@ class PerformInferencing
         sampleOutput = infer(src, shape, currmodel);
         // getOutputInfo(sampleOutput);
         plotDetections(sampleOutput, imgPath);
-        sampleOutput.Dispose();
         
+        sampleOutput.Dispose();
+        return;
     }
 
     private static IDisposableReadOnlyCollection<OrtValue> infer(float[] src, long[] shape, InferenceSession model)
@@ -134,15 +138,15 @@ class PerformInferencing
     {
         OrtValue output_0 = output[0];
         ReadOnlySpan<float> outputSpan = output_0.GetTensorDataAsSpan<float>();
-        // ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
-        ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
+        ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
+        // ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
         Mat frame = Cv2.ImRead(imgPath);
 
-        
         float x1, y1, x2, y2, cfd, cls, width, height;
-        int ConfPercent;
-        for(int det = 0; det < outputData.Count; det++)
+        int ConfAsPercent;
+        for(int det = 0; det < 3; det++)
         {
+            if(det >= outputData.Count){break;}
             //prepare data for each detection 
             x1 = outputData[det].x1;
             y1 = outputData[det].y1;
@@ -150,27 +154,25 @@ class PerformInferencing
             y2 = outputData[det].y2;
             cfd = outputData[det].conf;
             cls = outputData[det].classID;
-
+            ConfAsPercent = (int)(cfd*100);
+            
             width = x2 = x1;
             height = y2-y1;
+
             Console.WriteLine(x1 + " " + y1 +  " " + x2 + " " + y2 + " " + width + " " + height + " " + cfd + " " + cls);   
-            ConfPercent = (int)(cfd*100);
 
             //plot our detection
-            plotSingularDetection((int)x1,(int)y1,(int)width,(int)height,ConfPercent, frame);
+            plotSingularDetection((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
         }
-        
         Cv2.ImWrite("bbFrame.jpg", frame);
-
         return;
     }
 
     private static void plotSingularDetection(int x1, int y1, int width, int height, int ConfPercent, Mat frame)
     {
         Rect boundingBox = new Rect(x1, y1, width, height); //construct our bounding box
-        Scalar color = new Scalar(57, 255, 20); //construct w/ rgb values for neon-green
+        Scalar color = new Scalar(4, 28, 255); //construct w/ bgr values for bright red
         Point upLeft = new Point(x1, y1-5); //our text will be built starting from bottom left, attach bottom left to the top left of our bounding box
-
 
         //draw our boxes
         Cv2.Rectangle(frame, boundingBox, color, 2, LineTypes.Link8, 0);
