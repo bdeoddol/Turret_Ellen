@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Data;
 using System.Drawing.Imaging.Effects;
+using System.Net.Security;
 using System.Numerics;
 using System.Numerics.Tensors;
 using System.Reflection.Emit;
@@ -15,6 +16,7 @@ class PerformInferencing
 {
     public static void Run(string modelpath, string imgPath)
     {
+
         IDisposableReadOnlyCollection<OrtValue> sampleOutput;
         InferenceSession currmodel = new InferenceSession(modelpath);
                 
