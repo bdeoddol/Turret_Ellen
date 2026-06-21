@@ -4,13 +4,17 @@ class ModelInfo
 {
     public static void Run(string modelPath)
     {
-        InferenceSession currModel = new InferenceSession(modelPath);
+        // InferenceSession currModel = new InferenceSession(modelPath);
+        // SessionOptions options = new SessionOptions(); TODO append necessary options
+        using var  opt = SessionOptions.MakeSessionOptionWithCudaProvider(0);
+        InferenceSession currModel = new InferenceSession(modelPath, opt);
+
         getModelInfo(currModel);
     }
 
         private static void getModelInfo(InferenceSession model)
     {
-
+        
 
         IReadOnlyCollection<string> EPAvail = OrtEnv.Instance().GetAvailableProviders();
         Console.WriteLine("Software Check: List of all avilable Executions Provider support on this device: ");
