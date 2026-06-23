@@ -4,48 +4,57 @@ class ModelInfo
 {
     public static void Run(string modelPath)
     {
-        // InferenceSession currModel = new InferenceSession(modelPath);
-        // SessionOptions options = new SessionOptions(); TODO append necessary options
-        using var  opt = SessionOptions.MakeSessionOptionWithCudaProvider(0);
-        InferenceSession currModel = new InferenceSession(modelPath, opt);
 
+        SessionOptions opt = SessionOptions.MakeSessionOptionWithCudaProvider();
+        InferenceSession currModel = new InferenceSession(modelPath, opt);
         getModelInfo(currModel);
     }
 
         private static void getModelInfo(InferenceSession model)
     {
+        Console.WriteLine("For ORT Ver. " + OrtEnv.Instance().GetVersionString());
         
+        // !------------ THIS CODE USES THE ORT 1.27.0 API --------------! 
+        // IReadOnlyCollection<string> EPAvail = OrtEnv.Instance().GetAvailableProviders();
+        // Console.WriteLine("Software Check: List of all avilable Executions Provider support on this device: ");
+        // foreach(var val in EPAvail)
+        // {
+        //     Console.Write(val + " ");
+        // }
 
-        IReadOnlyCollection<string> EPAvail = OrtEnv.Instance().GetAvailableProviders();
-        Console.WriteLine("Software Check: List of all avilable Executions Provider support on this device: ");
-        foreach(var val in EPAvail)
-        {
-            Console.Write(val + " ");
-        }
+        // Console.WriteLine("\n\n");
 
-        Console.WriteLine("\n\n");
-
-        IReadOnlyCollection<OrtEpDevice> EPDeviceAvail = OrtEnv.Instance().GetEpDevices();
-        OrtKeyValuePairs valPair;
-        IReadOnlyDictionary<string,string> entries;
-        Console.WriteLine("Hardware Check: List of all Executions Providers for hardware on this device: ");
-        foreach(var val in EPDeviceAvail)
-        {
-            Console.Write("EpName: " + val.EpName + "\n\t"
-                         + "Ep Hardware Device Type: " + val.HardwareDevice.Type + "\n\t"
-                         + "Ep Hardware Device ID: " + val.HardwareDevice.DeviceId + "\n\t"
+        
+        // IReadOnlyCollection<OrtEpDevice> EPDeviceAvail = OrtEnv.Instance().GetEpDevices();
+        // OrtKeyValuePairs valPair;
+        // IReadOnlyDictionary<string,string> entries;
+        // Console.WriteLine("Hardware Check: List of all Executions Providers for hardware on this device: ");
+        // foreach(var val in EPDeviceAvail)
+        // {
+        //     Console.Write("EpName: " + val.EpName + "\n\t"
+        //                  + "Ep Hardware Device Type: " + val.HardwareDevice.Type + "\n\t"
+        //                  + "Ep Hardware Device ID: " + val.HardwareDevice.DeviceId + "\n\t"
                          
-            );
+        //     );
 
-            valPair = val.EpOptions;
-            entries = valPair.Entries;
-            foreach(var entry in entries)
-            {
-                Console.WriteLine(entry.Key + " " + entry.Value);
-            }
+        //     valPair = val.EpOptions;
+        //     entries = valPair.Entries;
+        //     foreach(var entry in entries)
+        //     {
+        //         Console.WriteLine(entry.Key + " " + entry.Value);
+        //     }
+        // }
+        // Console.WriteLine("");
+        // !------------ THIS CODE USES THE ORT 1.27.0 API --------------! 
+
+        string[]  availProviders = OrtEnv.Instance().GetAvailableProviders();
+        Console.WriteLine("Software Check: List of all avilable Executions Provider support on this device: ");
+        foreach (string value in availProviders)
+        {
+            Console.WriteLine(value);
         }
         Console.WriteLine("");
-
+        
 
         // check input data info
         IReadOnlyDictionary<string, NodeMetadata> inputMdat = model.InputMetadata;

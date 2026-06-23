@@ -1,5 +1,6 @@
 import torch
 import torchvision
+import onnxruntime
 from torchvision.models.detection import SSDLite320_MobileNet_V3_Large_Weights
 
 # weights = SSDLite320_MobileNet_V3_Large_Weights.DEFAULT
@@ -14,7 +15,7 @@ from torchvision.models.detection import SSDLite320_MobileNet_V3_Large_Weights
 # trace_input = torch.randn(3, 320, 320)
 # torch.onnx.export(model, [trace_input], "ssdLite.onnx", input_names=["input"], dynamo=True, report=False, verbose=False)
 
-print(torch.cuda.is_available());
+print(torch.cuda.is_available())
 
 
 

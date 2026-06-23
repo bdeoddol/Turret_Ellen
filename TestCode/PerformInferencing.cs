@@ -16,22 +16,27 @@ class PerformInferencing
 {
     public static void Run(string modelpath, string imgPath)
     {
+        InferenceSession? currmodel = null;
+        SessionOptions opt = new SessionOptions();
+        //append CUDA EP to list first for priority
+        opt.AppendExecutionProvider_CUDA();
+        opt.AppendExecutionProvider_CPU();
 
-        IDisposableReadOnlyCollection<OrtValue> sampleOutput;
-        InferenceSession currmodel = new InferenceSession(modelpath);
-                
+        try{currmodel = new InferenceSession(modelpath, opt);}
+        catch{Console.WriteLine("Failed to create inference session"); return;}                
+
 
         Mat frame = Cv2.ImRead(imgPath); //image resized(images are required to fit a dimension divisible by 32)
         float[] src = PreprocessingTest.prepareSource(frame);
         long[] shape = PreprocessingTest.prepareShape(frame);
 
-
-        // infer(src, shape, currmodel);
+        IDisposableReadOnlyCollection<OrtValue> sampleOutput;
         sampleOutput = infer(src, shape, currmodel);
         // getOutputInfo(sampleOutput);
         plotDetections(sampleOutput, imgPath);
         
         sampleOutput.Dispose();
+        
         return;
     }
 
@@ -45,8 +50,6 @@ class PerformInferencing
         };
 
         IDisposableReadOnlyCollection<OrtValue> output = model.Run(runOptions, inputs, model.OutputNames);
-        
-
         return output;
     }
 
@@ -140,8 +143,8 @@ class PerformInferencing
     {
         OrtValue output_0 = output[0];
         ReadOnlySpan<float> outputSpan = output_0.GetTensorDataAsSpan<float>();
-        ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
-        // ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
+        // ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
+        ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
         Mat frame = Cv2.ImRead(imgPath);
 
         float x1, y1, x2, y2, cfd, cls, width, height;
