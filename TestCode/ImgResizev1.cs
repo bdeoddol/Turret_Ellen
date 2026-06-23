@@ -1,4 +1,5 @@
 using System.Drawing.Imaging;
+using System.Runtime.CompilerServices;
 using OpenCvSharp;
 
 class ImgResizev1
@@ -15,11 +16,33 @@ class ImgResizev1
         Console.WriteLine("Original dims: " + frame.Width + "x" + frame.Height);
         Console.WriteLine("Aligned up dims: " + aUWidth  + "x" + aUHeight);
         Console.WriteLine("Aligned down dims: " + aDWidth + "x" + aDHeight);
-        Size newsize = new Size(aUWidth, aUHeight);
-        Cv2.Resize(frame, frame, newsize);
-        Cv2.ImWrite("rs-frame.jpg", frame);
+
+        performPadding(frame, aUWidth, aUHeight);
+        // performResize(frame, aUWidth, aUHeight);
+
+        Cv2.ImWrite("imrs-frame.jpg", frame);
         return;
     }
+
+    private static void performPadding(Mat frame, int upsizedWidth, int upsizedHeight)
+    {
+        int widthDiff = upsizedWidth - frame.Width;
+        int heightDiff = upsizedHeight - frame.Height;
+        Mat retFrame = new Mat();
+        
+    
+        Cv2.CopyMakeBorder(frame, frame, heightDiff/2, heightDiff-(heightDiff/2), widthDiff/2, widthDiff-(widthDiff/2), BorderTypes.Isolated);
+        return;
+    }
+
+    private static void performResize(Mat frame, int upsizedWidth, int upsizedHeight)
+    {
+        Size newsize = new Size(upsizedWidth, upsizedHeight);
+        Cv2.Resize(frame,frame, newsize);
+
+        return;
+    }
+
 
     private static bool ValidateImgDim(Mat frame)
     {

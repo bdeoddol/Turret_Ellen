@@ -7,7 +7,7 @@ class Program
         //change program name/ filepath accordingly
         // PreprocessingTest.Run("../testImgs/imrs-sampleWebcam.jpg");
         ImgResizev1.Run("../testImgs/MessiRonaldo2.jpg");
-        PerformInferencing.Run("../TestAssets/yolo26n.onnx", "rs-frame.jpg");
+        PerformInferencing.Run("../TestAssets/yolo26m.onnx", "imrs-frame.jpg");
         // ModelInfo.Run("../TestAssets/yolo26m.onnx");
         
 

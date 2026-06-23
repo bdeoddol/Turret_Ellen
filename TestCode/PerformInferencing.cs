@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Drawing.Imaging.Effects;
 using System.Net.Security;
@@ -16,14 +18,18 @@ class PerformInferencing
 {
     public static void Run(string modelpath, string imgPath)
     {
-        InferenceSession? currmodel = null;
-        SessionOptions opt = new SessionOptions();
-        //append CUDA EP to list first for priority
-        opt.AppendExecutionProvider_CUDA();
-        opt.AppendExecutionProvider_CPU();
-
-        try{currmodel = new InferenceSession(modelpath, opt);}
-        catch{Console.WriteLine("Failed to create inference session"); return;}                
+        InferenceSession currmodel;
+        try
+        {
+            using var options = SessionOptions.MakeSessionOptionWithCudaProvider(0);
+            currmodel = new InferenceSession(modelpath, options);
+            // use CUDA
+        }
+        catch
+        {
+            currmodel = new InferenceSession(modelpath);
+            // use CPU
+        }              
 
 
         Mat frame = Cv2.ImRead(imgPath); //image resized(images are required to fit a dimension divisible by 32)
@@ -32,8 +38,9 @@ class PerformInferencing
 
         IDisposableReadOnlyCollection<OrtValue> sampleOutput;
         sampleOutput = infer(src, shape, currmodel);
+        ImmutableList<Detection> detections = parseOutputData(sampleOutput);
         // getOutputInfo(sampleOutput);
-        plotDetections(sampleOutput, imgPath);
+        plotDetections(detections, imgPath);
         
         sampleOutput.Dispose();
         
@@ -92,64 +99,65 @@ class PerformInferencing
         return;
     }
     
-    private static ImmutableList<Detection> filterByConfidence(ReadOnlySpan<float> outputData, double cfdThreshold)
+    private static ImmutableList<Detection> parseOutputData(IDisposableReadOnlyCollection<OrtValue> data)
+    {
+        OrtValue data_0 = data[0];
+        ReadOnlySpan<float> dataSpan = data_0.GetTensorDataAsSpan<float>();
+        
+        List<Detection> List = new List<Detection>();
+        for(int i = 0; i < dataSpan.Length; i+=6)
+        {
+            Detection newDet = new Detection(
+                    dataSpan[i+0],
+                    dataSpan[i+1],
+                    dataSpan[i+2],
+                    dataSpan[i+3],
+                    dataSpan[i+4],
+                    dataSpan[i+5]);
+            List.Add(newDet);
+        }
+        ImmutableList<Detection> retList = List.ToImmutableList<Detection>();
+
+        return retList;
+    }
+
+    private static ImmutableList<Detection> filterByConfidence(ImmutableList<Detection> outputData, double cfdThreshold)
     {
         List<Detection> List = new List<Detection>();
 
-        for(int i = 0; i < outputData.Length; i+=6)
+        for(int i = 0; i < outputData.Count; i++)
         {
-            if(outputData[i+4] >= cfdThreshold)
-            {
-                Detection newDet = new Detection(
-                    outputData[i+0],
-                    outputData[i+1],
-                    outputData[i+2],
-                    outputData[i+3],
-                    outputData[i+4],
-                    outputData[i+5]);
-                    List.Add(newDet);
-            }
+            if(outputData[i].conf >= cfdThreshold){List.Add(outputData[i]);}
         }
         ImmutableList<Detection> retList = List.ToImmutableList();
         
         return retList;
     }
 
-    private static ImmutableList<Detection> filterByClass(ReadOnlySpan<float> outputData, int classID)
+    private static ImmutableList<Detection> filterByClass(ImmutableList<Detection> outputData, int classID)
     {
         List<Detection> List = new List<Detection>();
 
-        for(int i = 0; i < outputData.Length; i+=6)
+        for(int i = 0; i < outputData.Count; i++)
         {
-            if(outputData[i+5] == classID)
-            {
-                Detection newDet = new Detection(
-                    outputData[i+0],
-                    outputData[i+1],
-                    outputData[i+2],
-                    outputData[i+3],
-                    outputData[i+4],
-                    outputData[i+5]
-                    );
-                    List.Add(newDet);
-            }
+            if(outputData[i].classID == classID){List.Add(outputData[i]);}
         }
         ImmutableList<Detection> retList = List.ToImmutableList();
         
         return retList;
     }
 
-    private static void plotDetections(IDisposableReadOnlyCollection<OrtValue> output, string imgPath)
+    private static void plotDetections(ImmutableList<Detection> output, string imgPath)
     {
-        OrtValue output_0 = output[0];
-        ReadOnlySpan<float> outputSpan = output_0.GetTensorDataAsSpan<float>();
-        ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
-        // ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
+
+        ImmutableList<Detection> outputData = filterByClass(output, 0); 
+        // ImmutableList<Detection> outputData = filterByConfidence(outputByClass, 0.60);
+
         Mat frame = Cv2.ImRead(imgPath);
 
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent;
-        for(int det = 0; det < 3; det++)
+        for(int det = 0; det < outputData.Count; det++)
         {
             if(det >= outputData.Count){break;}
             //prepare data for each detection 
@@ -161,15 +169,16 @@ class PerformInferencing
             cls = outputData[det].classID;
             ConfAsPercent = (int)(cfd*100);
             
-            width = x2 = x1;
+            width = x2-x1;
             height = y2-y1;
 
-            Console.WriteLine(x1 + " " + y1 +  " " + x2 + " " + y2 + " " + width + " " + height + " " + cfd + " " + cls);   
+            Console.WriteLine("Detection no." + det + ": " + x1 + " " + y1 +  " " + x2 + " " + y2 + " " + width + " " + height + " " + cfd + " " + cls);   
 
             //plot our detection
             plotSingularDetection((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
         }
-        Cv2.ImWrite("bbFrame.jpg", frame);
+
+        Cv2.ImWrite("bbFrame.jpg", frame);        
         return;
     }
 
