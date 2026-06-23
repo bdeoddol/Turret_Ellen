@@ -31,16 +31,29 @@ class PerformInferencing
             // use CPU
         }              
 
+    //preprocessing
+        Mat frame = Cv2.ImRead(imgPath); //image to be processed
+        int frameOrigWidth = frame.Width;
+        int frameOrigHeight = frame.Height;
+        int aUWidth = ImgResizev1.AlignUp(frame.Width)*32;
+        int aUHeight = ImgResizev1.AlignUp(frame.Height)*32;
+        int aDWidth = ImgResizev1.AlignDown(frame.Width)*32;
+        int aDHeight = ImgResizev1.AlignDown(frame.Height)*32;
+        if(ImgResizev1.ValidateImgDim(frame) == false)
+        {
+            ImgResizev1.performResize(frame, aUWidth, frame.Height*(aUWidth/frame.Width));
+            ImgResizev1.performPaddingVert(frame,aUHeight);
+        }
 
-        Mat frame = Cv2.ImRead(imgPath); //image resized(images are required to fit a dimension divisible by 32)
         float[] src = PreprocessingTest.prepareSource(frame);
         long[] shape = PreprocessingTest.prepareShape(frame);
+    //
 
         IDisposableReadOnlyCollection<OrtValue> sampleOutput;
         sampleOutput = infer(src, shape, currmodel);
         ImmutableList<Detection> detections = parseOutputData(sampleOutput);
         // getOutputInfo(sampleOutput);
-        plotDetections(detections, imgPath);
+        plotDetections(detections, frame, imgPath);
         
         sampleOutput.Dispose();
         
@@ -124,37 +137,30 @@ class PerformInferencing
     private static ImmutableList<Detection> filterByConfidence(ImmutableList<Detection> outputData, double cfdThreshold)
     {
         List<Detection> List = new List<Detection>();
-
         for(int i = 0; i < outputData.Count; i++)
         {
             if(outputData[i].conf >= cfdThreshold){List.Add(outputData[i]);}
         }
         ImmutableList<Detection> retList = List.ToImmutableList();
-        
         return retList;
     }
 
     private static ImmutableList<Detection> filterByClass(ImmutableList<Detection> outputData, int classID)
     {
         List<Detection> List = new List<Detection>();
-
         for(int i = 0; i < outputData.Count; i++)
         {
             if(outputData[i].classID == classID){List.Add(outputData[i]);}
         }
         ImmutableList<Detection> retList = List.ToImmutableList();
-        
         return retList;
     }
 
-    private static void plotDetections(ImmutableList<Detection> output, string imgPath)
+    private static void plotDetections(ImmutableList<Detection> output, Mat frame, string imgPath)
     {
 
-        ImmutableList<Detection> outputData = filterByClass(output, 0); 
-        // ImmutableList<Detection> outputData = filterByConfidence(outputByClass, 0.60);
-
-        Mat frame = Cv2.ImRead(imgPath);
-
+        // ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0), 0.50);
+        ImmutableList<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent;
         for(int det = 0; det < outputData.Count; det++)
@@ -175,14 +181,18 @@ class PerformInferencing
             Console.WriteLine("Detection no." + det + ": " + x1 + " " + y1 +  " " + x2 + " " + y2 + " " + width + " " + height + " " + cfd + " " + cls);   
 
             //plot our detection
-            plotSingularDetection((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
+            plotSingularHelper((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
         }
-
+        
+        Mat origImg = Cv2.ImRead(imgPath);
+        Rect ROI = ImgResizev1.GetRectOfOriginalFrame(origImg);
+        frame = new Mat(frame, ROI);    
+        ImgResizev1.performResize(frame, origImg.Width, origImg.Height);
         Cv2.ImWrite("bbFrame.jpg", frame);        
         return;
     }
 
-    private static void plotSingularDetection(int x1, int y1, int width, int height, int ConfPercent, Mat frame)
+    private static void plotSingularHelper(int x1, int y1, int width, int height, int ConfPercent, Mat frame)
     {
         Rect boundingBox = new Rect(x1, y1, width, height); //construct our bounding box
         Scalar color = new Scalar(4, 28, 255); //construct w/ bgr values for bright red
@@ -190,9 +200,12 @@ class PerformInferencing
 
         //draw our boxes
         Cv2.Rectangle(frame, boundingBox, color, 2, LineTypes.Link8, 0);
-        Cv2.PutText(frame, "Person: "  + ConfPercent + "%", upLeft, HersheyFonts.HersheySimplex, 0.75, color, 2);
+        Cv2.PutText(frame, "Person: "  + ConfPercent + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
+
 
     }
+
+ 
 }
 
 
