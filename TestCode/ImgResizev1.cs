@@ -5,6 +5,7 @@ class ImgResizev1
 {
     public static void Run(string imgPath)
     {
+        Console.WriteLine("ImgResizev1");
         Mat frame = Cv2.ImRead(imgPath);
         ValidateImgDim(frame);
         int aUWidth = AlignUp(frame.Width)*32;
@@ -19,7 +20,7 @@ class ImgResizev1
         Cv2.ImWrite("rs-frame.jpg", frame);
         return;
     }
-    
+
     private static bool ValidateImgDim(Mat frame)
     {
         int height = frame.Height;

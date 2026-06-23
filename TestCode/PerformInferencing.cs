@@ -143,8 +143,8 @@ class PerformInferencing
     {
         OrtValue output_0 = output[0];
         ReadOnlySpan<float> outputSpan = output_0.GetTensorDataAsSpan<float>();
-        // ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
-        ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
+        ImmutableList<Detection> outputData = filterByClass(outputSpan, 0); 
+        // ImmutableList<Detection> outputData = filterByConfidence(outputSpan, 0.75);
         Mat frame = Cv2.ImRead(imgPath);
 
         float x1, y1, x2, y2, cfd, cls, width, height;
