@@ -159,8 +159,8 @@ class PerformInferencing
     private static void plotDetections(ImmutableList<Detection> output, Mat frame, string imgPath)
     {
 
-        // ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0), 0.50);
-        ImmutableList<Detection> outputData = filterByClass(output, 0);
+        ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0), 0.5);
+        // ImmutableList<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent;
         for(int det = 0; det < outputData.Count; det++)
@@ -188,6 +188,7 @@ class PerformInferencing
         Rect ROI = ImgResizev1.GetRectOfOriginalFrame(origImg);
         frame = new Mat(frame, ROI);    
         ImgResizev1.performResize(frame, origImg.Width, origImg.Height);
+        origImg.Dispose();
         Cv2.ImWrite("bbFrame.jpg", frame);        
         return;
     }

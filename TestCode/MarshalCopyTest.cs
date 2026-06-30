@@ -12,7 +12,7 @@ class MarshalCopyTest
     {
         
         Mat frame = Cv2.ImRead(filepath);
-        Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1, default, default, true, false);
+        Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1.0/255.0, default, default, true, false);
         Mat flat = blobbed_frame.Reshape(1,1);  //note that Reshape() returns the same reshaped matrix, it does not modify the obj itself
         int len = flat.Cols;
 

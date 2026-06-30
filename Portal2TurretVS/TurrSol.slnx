@@ -7,4 +7,5 @@
   <Project Path="SnapshotTest/SnapshotTest.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Project Path="Tracking/Tracking.csproj" Id="e596dd67-675d-4c6d-94c7-276577dabcd4" />
 </Solution>
