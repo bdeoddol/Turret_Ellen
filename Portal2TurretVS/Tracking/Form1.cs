@@ -28,9 +28,9 @@ namespace Tracking
         private bool _alive;
         private Thread? _captureThread;
 
-        private InferenceSession _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
-        private float[] src;
-        private long[] shape;
+        private InferenceSession? _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
+        private float[]? src;
+        private long[]? shape;
 
         public Form1()
         {
@@ -76,6 +76,34 @@ namespace Tracking
 
         }
 
+        private void grabFrame()
+        {
+            while (_alive == true)
+            {
+                Thread.Sleep(100);
+                if (_running == true)
+                {
+                    if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
+                    _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
+
+
+                    src = Preprocessing.prepareSrc(_frame); //TODO: implement method
+                    shape = Preprocessing.prepareShape(_frame);
+
+
+                    //capture the frame, process it within the InferenceSession, return the output
+
+                    if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
+                    {
+                        //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
+                        //we basically delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
+                        pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
+                    }
+                }
+
+            }
+            return;
+        }
 
 
         private void Stream()
