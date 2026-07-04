@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <!-- <PackageReference Include="MathNet.Numerics" Version="5.0.0" /> package to support bytetrack algo -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.20.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.27.0" />
     <!-- <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu.Windows" Version="1.27.0" /> package for modern nvidia gpus-->
     <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260602" />
