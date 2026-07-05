@@ -8,6 +8,9 @@ class ImgResizev1
     {
         Console.WriteLine("ImgResizev1");
         Mat frame = Cv2.ImRead(imgPath);
+
+        Rect ROI = GetRectOfOriginalFrame(frame);
+
         if(ValidateImgDim(frame) == false)
         {Console.WriteLine("Image validation returned false");}
         else{Console.WriteLine("Image validation returned true");}
@@ -16,7 +19,9 @@ class ImgResizev1
         int aUHeight = AlignUp(frame.Height)*32;
         int aDWidth = AlignDown(frame.Width)*32;
         int aDHeight = AlignDown(frame.Height)*32;
-        Console.WriteLine("Original dims: " + frame.Width + "x" + frame.Height);
+        int origWidth = frame.Width;
+        int origHeight = frame.Height;
+        Console.WriteLine("Original dims: " + origWidth + "x" + origHeight);
         Console.WriteLine("Aligned up dims: " + aUWidth  + "x" + aUHeight); //target resize
         Console.WriteLine("Aligned down dims: " + aDWidth + "x" + aDHeight);
 
@@ -27,6 +32,11 @@ class ImgResizev1
         
         Console.WriteLine("Final Dims: " + frame.Width + "x" + frame.Height);
         Cv2.ImWrite("imrs-frame.jpg", frame);
+
+        frame = new Mat(frame, ROI);    
+        performResize(frame, origWidth, origHeight);
+        Cv2.ImWrite("imrs-frameReturn.jpg", frame);      
+        Console.WriteLine("Original dims: " + frame.Width + "x" + frame.Height);
         return;
     }
 
@@ -34,7 +44,9 @@ class ImgResizev1
     {
         int aUWidth = AlignUp(frame.Width)*32;
         int aUHeight = AlignUp(frame.Height)*32;
-        Rect retRect = new Rect(aUWidth-frame.Width,aUHeight-frame.Height, frame.Width,frame.Height-(aUHeight-frame.Height) );
+        int difference = aUHeight-frame.Height;
+
+        Rect retRect = new Rect(0,difference/2, aUWidth, aUHeight-difference);
         return retRect;
     }
 
