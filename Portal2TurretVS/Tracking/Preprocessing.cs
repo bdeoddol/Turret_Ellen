@@ -6,24 +6,22 @@ public class Preprocessing
 {
     public static float[] prepareSrc(Mat frame)
     {
-        frame = CvDnn.BlobFromImage(frame, 1.0 / 255.0, default, default, true, false);
-        Mat flattened = frame.Reshape(1, 1);
+        Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1.00 / 255.00, default, default, true, false); //https://github.com/orgs/ultralytics/discussions/6382?utm_source=chatgpt.com#discussioncomment-9387981
+        Mat flattened = blobbed_frame.Reshape(1, 1);
         uint len = (uint)flattened.Size(1);
-
-        IntPtr matData = flattened.Data;
         float[] retArray = new float[len];
-        Marshal.Copy(matData, retArray, 0, (int)len);
+        IntPtr matPtr = flattened.Data;
+
+        Marshal.Copy(matPtr, retArray, 0, (int)len);
 
         return retArray;
     }
     public static long[] prepareShape(Mat frame)
     {
-        Mat blob = CvDnn.BlobFromImage(frame, 1.0 / 255.0, default, default, true, false);
-        int dims = blob.Dims;
+        Mat blobbed_frame = CvDnn.BlobFromImage(frame, 1.00 / 255.00, default, default, true, false); //https://github.com/orgs/ultralytics/discussions/6382?utm_source=chatgpt.com#discussioncomment-9387981
+        int dims = blobbed_frame.Dims;
         long[] retArray = new long[dims];
-
-        for (int i = 0; i < dims; i++)
-        { retArray[i] = blob.Size(i); }
+        for (int i = 0; i < dims; i++){retArray[i] = blobbed_frame.Size(i);}
 
         return retArray;
     }

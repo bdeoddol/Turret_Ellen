@@ -20,12 +20,14 @@ namespace Tracking
         //via https://elbruno.com/2020/11/16/dotnet-display-the-%F0%9F%8E%A6-camera-feed-in-a-winform-using-opencv-and-net5/
 
         private VideoCapture? _captures;
-        private Mat? _frame;
+        private Mat? _srcFrame;
+        private Mat? _processedFrame;
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
 
         private bool _running;
         private bool _alive;
+        private Thread? _swapThread;
         private Thread? _captureThread;
 
         private InferenceSession? _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
@@ -42,11 +44,11 @@ namespace Tracking
 
         private void Form1_Load(object? sender, EventArgs e)
         {
-            _frame = new Mat();
-            //helperClass = new Preprocessing();
+            _srcFrame = new Mat();
             SetCameraButtonActive();
 
             _running = false;
+            _swapThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
             //_currModel = new InferenceSession("../../TestAssets/yolo26n.onnx"); TODO
@@ -60,45 +62,36 @@ namespace Tracking
                 _captures?.Release();
                 _captures?.Dispose();
             }
-            if (_frame != null)
+            if (_srcFrame != null)
             {
-                _frame?.Dispose();
-                _frame = null;
+                _srcFrame?.Dispose();
+                _srcFrame = null;
             }
         }
 
         private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
         //kill the worker as we are closing the form, otherwise it will keep running in the background and cause memory leaks
         {
+            KillThreads();
+        }
+
+        private void KillThreads()
+        {
             _running = false;
             _alive = false;
-            if (_captureThread != null && _captureThread.IsAlive) { _captureThread?.Join(500); }
-
+            if (_captureThread != null && _swapThread != null) { _captureThread?.Join(500); _swapThread?.Join(500); }
         }
 
         private void grabFrame()
         {
             while (_alive == true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (_running == true)
                 {
-                    if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
-                    _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
+                    if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
+                    _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _frame
 
-
-                    src = Preprocessing.prepareSrc(_frame); //TODO: implement method
-                    shape = Preprocessing.prepareShape(_frame);
-
-
-                    //capture the frame, process it within the InferenceSession, return the output
-
-                    if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
-                    {
-                        //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
-                        //we basically delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
-                        pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
-                    }
                 }
 
             }
@@ -113,15 +106,19 @@ namespace Tracking
                 Thread.Sleep(100);
                 if (_running == true)
                 {
-                    if (_frame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
-                    _captures?.Read(_frame); //decode the next frame from the video stream and store it in _frame
+                    if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
 
 
-                    src = Preprocessing.prepareSrc(_frame); //TODO: implement method
-                    shape = Preprocessing.prepareShape(_frame);
-
-
+                    ///////////////////////////preprocessing stage////////////////////////////////
+                    _processedFrame = _srcFrame;
+                    src = Preprocessing.prepareSrc(_processedFrame);
+                    shape = Preprocessing.prepareShape(_processedFrame);
                     //capture the frame, process it within the InferenceSession, return the output
+
+
+
+
+
 
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
@@ -138,11 +135,11 @@ namespace Tracking
         private void swapFrames()
         {
 
-            if (!_alive || _frame == null || _frame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
+            if (!_alive || _processedFrame == null || _processedFrame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
             // _frame.ConvertTo(_frame, MatType.CV_8U);
-            _displayFrame = BitmapConverter.ToBitmap(_frame);
+            _displayFrame = BitmapConverter.ToBitmap(_processedFrame);
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
         }
@@ -163,15 +160,17 @@ namespace Tracking
         private void ConnectCamera_Click(object sender, EventArgs e)
         {
             _captures = new VideoCapture(0);
-            _frame = new Mat();
+            _srcFrame = new Mat();
             if (_captures.IsOpened() == false)
             {
                 MessageBox.Show("Could not connect to camera. Please connect a camera and try again.");
                 return;
             }
-            _captureThread = new Thread(new ThreadStart(Stream));
+            _captureThread = new Thread(new ThreadStart(grabFrame));
+            _swapThread = new Thread(new ThreadStart(Stream));
             _alive = true;
             _captureThread.Start();
+            _swapThread.Start();
 
 
             SetDisconnectButtonActive();
@@ -180,16 +179,14 @@ namespace Tracking
 
         private void DisconnectCamera_Click(object sender, EventArgs e)
         {
-            _running = false;
-            _alive = false;
+            KillThreads();
 
-            if (_captureThread != null && _captureThread.IsAlive) { _captureThread.Join(500); }
             _captures?.Release();
             _captures?.Dispose();
             _captures = null;
-            _frame?.Release();
-            _frame?.Dispose();
-            _frame = null;
+            _srcFrame?.Release();
+            _srcFrame?.Dispose();
+            _srcFrame = null;
 
             pictureBox1.Hide();
             SetCameraButtonActive();
@@ -216,6 +213,7 @@ namespace Tracking
         {
 
         }
+        
 
 
     }
