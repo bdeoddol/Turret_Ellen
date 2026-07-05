@@ -111,6 +111,15 @@ namespace Tracking
 
                     ///////////////////////////preprocessing stage////////////////////////////////
                     _processedFrame = _srcFrame;
+                    if(Preprocessing.ValidateImgDim(_processedFrame) == false)
+                    {
+                        int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
+                        int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
+                        Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
+                        Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                    }
+
+
                     src = Preprocessing.prepareSrc(_processedFrame);
                     shape = Preprocessing.prepareShape(_processedFrame);
                     //capture the frame, process it within the InferenceSession, return the output
