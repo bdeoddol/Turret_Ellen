@@ -3,9 +3,11 @@ using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using OpenCvSharp.Extensions;
 using System;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices.Marshalling;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -30,9 +32,13 @@ namespace Tracking
         private Thread? _swapThread;
         private Thread? _captureThread;
 
-        private InferenceSession? _currModel; // TODO: initiialize with actual onnx model (dispoable obj)
+        private InferenceSession? _currModel;
+        private string? _modelPath;
         private float[]? src;
         private long[]? shape;
+        private bool resized = false;
+        private Rect ROICrop;
+        private int origWidth, origHeight;
 
         public Form1()
         {
@@ -51,7 +57,17 @@ namespace Tracking
             _swapThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
-            //_currModel = new InferenceSession("../../TestAssets/yolo26n.onnx"); TODO
+            _modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. Need to be adjusted when publishing TODO
+
+
+            try
+            {
+                using var options = SessionOptions.MakeSessionOptionWithCudaProvider(0);
+                _currModel = new InferenceSession(_modelPath, options);
+                
+            }   // use CUDA
+            catch
+            { _currModel = new InferenceSession(_modelPath);}   // use CPU            
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -67,6 +83,11 @@ namespace Tracking
                 _srcFrame?.Dispose();
                 _srcFrame = null;
             }
+            if(_currModel != null)
+            {
+                 _currModel.Dispose();
+            }
+           
         }
 
         private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
@@ -108,26 +129,44 @@ namespace Tracking
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
 
-
+                    //capture the frame, process it within the InferenceSession, display the output
                     ///////////////////////////preprocessing stage////////////////////////////////
                     _processedFrame = _srcFrame;
                     if(Preprocessing.ValidateImgDim(_processedFrame) == false)
                     {
+                        ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
+                        origWidth = _processedFrame.Width;
+                        origHeight = _processedFrame.Height;
                         int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
                         int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
                         Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
                         Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                        resized = true;
                     }
-
 
                     src = Preprocessing.prepareSrc(_processedFrame);
                     shape = Preprocessing.prepareShape(_processedFrame);
-                    //capture the frame, process it within the InferenceSession, return the output
 
+                    
+                    IDisposableReadOnlyCollection<OrtValue> sampleOutput;
+                    if(_currModel != null)
+                    {
+                        
+                        sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
 
+                        ///////////////////////////Postprocessing stage////////////////////////////////
+                        ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+                        Postprocessing.plotDetections(detections,  _processedFrame);
+                        if(resized == true)
+                        {
+                            _processedFrame = new Mat(_processedFrame, ROICrop);
+                            Preprocessing.performResize(_processedFrame, origWidth, origHeight);
+                            resized = false;
+                        }
+                        sampleOutput.Dispose();
+                    }
 
-
-
+        
 
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
