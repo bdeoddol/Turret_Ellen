@@ -57,7 +57,8 @@ namespace Tracking
             _swapThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
-            _modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. Need to be adjusted when publishing TODO
+            //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. Need to be adjusted when publishing TODO
+            _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
 
 
             try
@@ -67,7 +68,7 @@ namespace Tracking
                 
             }   // use CUDA
             catch
-            { _currModel = new InferenceSession(_modelPath);}   // use CPU            
+            { _currModel = new InferenceSession(_modelPath);}   // fallback and use CPU            
         }
 
         private void Form1_Closed(object? sender, EventArgs e)

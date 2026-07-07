@@ -82,8 +82,6 @@ public class Postprocessing
             width = x2-x1;
             height = y2-y1;
 
-            Console.WriteLine("Detection no." + det + ": " + x1 + " " + y1 +  " " + x2 + " " + y2 + " " + width + " " + height + " " + cfd + " " + cls);   
-
             //plot our detection
             plotSingularHelper((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
         }

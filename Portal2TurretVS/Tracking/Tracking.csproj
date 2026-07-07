@@ -33,4 +33,17 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <!--
+  Source - https://stackoverflow.com/a/62709865
+  Posted by user3456014, modified by community. See post 'Timeline' for change history
+  Retrieved 2026-07-06, License - CC BY-SA 4.0
+  -->
+  <ItemGroup>
+    <None Include="assets\*.onnx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory> 
+      <!--copies the file path to the bin folder as part of the build such that it exists alongside the output exe file-->
+    </None>
+  </ItemGroup>
+
+
 </Project>
