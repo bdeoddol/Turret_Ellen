@@ -68,7 +68,7 @@ namespace Tracking
             _swapThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
-            //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. Need to be adjusted when publishing TODO
+            //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
             {
@@ -82,7 +82,7 @@ namespace Tracking
                 _currModel = new InferenceSession(_modelPath);    
             }   // fallback and use CPU    
 
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 14, 30, (float)0.4, (float)0.5, (float)0.7);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 15, 150, (float)0.4, (float)0.5, (float)0.6);
 
         }
 
@@ -173,18 +173,20 @@ namespace Tracking
                         ///////////////////////////Postprocessing ////////////////////////////////
                         ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
 
-                        //prepare detections for BYTETrack
+                        
                         if(_trackingSession != null)
                         {
+                            //prepare detections for BYTETrack
                             List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
                             foreach(Detection val in detections)
                             {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
 
-
+                            //update BYTETrack and get new tracking results
                             List<STrack> outputTracks = _trackingSession.update(BTObjs);
                             detections = Postprocessing.ListSTrackToDet(outputTracks);   
                         }
 
+                        //draw our detections and resize image back to original size if necessary
                         Postprocessing.plotDetections(detections,  _processedFrame);
                         if(resized == true)
                         {
