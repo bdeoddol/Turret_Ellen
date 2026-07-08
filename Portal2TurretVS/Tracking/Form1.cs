@@ -21,7 +21,6 @@ namespace Tracking
 {
     public partial class Form1 : Form
     {
-        //via https://elbruno.com/2020/11/16/dotnet-display-the-%F0%9F%8E%A6-camera-feed-in-a-winform-using-opencv-and-net5/
 
         private VideoCapture? _captures;
         private Mat? _srcFrame;
@@ -45,7 +44,7 @@ namespace Tracking
 
         private int frameCnt = 0;
         private Stopwatch totalRuntime = new Stopwatch();
-        string fpsDisplay = "Calculating...";
+        string? fpsDisplay;
 
 
         private BYTETracker? _trackingSession;
@@ -82,7 +81,8 @@ namespace Tracking
                 _currModel = new InferenceSession(_modelPath);    
             }   // fallback and use CPU    
 
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 15, 150, (float)0.4, (float)0.5, (float)0.6);
+            
+            
 
         }
 
@@ -123,7 +123,7 @@ namespace Tracking
         {
             while (_alive == true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(25);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
@@ -141,7 +141,7 @@ namespace Tracking
             totalRuntime.Start();
             while (_alive == true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
@@ -261,7 +261,7 @@ namespace Tracking
             _alive = true;
             _captureThread.Start();
             _swapThread.Start();
-
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 15, 150, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
             return;

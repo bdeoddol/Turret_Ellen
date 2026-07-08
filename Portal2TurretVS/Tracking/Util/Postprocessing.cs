@@ -64,7 +64,7 @@ public class Postprocessing
     public static void plotDetections(ImmutableList<Detection> output,  Mat frame)
     {
 
-        ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0), 0.5);
+        ImmutableList<Detection> outputData = filterByClass(output, 0);
         // ImmutableList<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent, detID;
