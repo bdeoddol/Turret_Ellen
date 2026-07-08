@@ -7,6 +7,7 @@ using System;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO.Ports;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.X509Certificates;
@@ -33,6 +34,9 @@ namespace Tracking
         private Thread? _swapThread;
         private Thread? _captureThread;
 
+
+        private bool _trackingMode; 
+        private BYTETracker? _trackingSession;
         private InferenceSession? _currModel;
         private string? _modelPath;
         private float[]? src;
@@ -46,9 +50,7 @@ namespace Tracking
         private Stopwatch totalRuntime = new Stopwatch();
         string? fpsDisplay;
 
-
-        private BYTETracker? _trackingSession;
-
+        private SerialPort? _serialPort;
 
         public Form1()
         {
@@ -67,6 +69,8 @@ namespace Tracking
             _swapThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
+
+            _trackingMode = false;
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
@@ -145,61 +149,61 @@ namespace Tracking
                 if (_running == true)
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
-
-                    //capture the frame, process it within the InferenceSession, display the output
-                    ///////////////////////////preprocessing ////////////////////////////////
                     _processedFrame = _srcFrame;
-                    if(Preprocessing.ValidateImgDim(_processedFrame) == false)
-                    {
-                        ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
-                        origWidth = _processedFrame.Width;
-                        origHeight = _processedFrame.Height;
-                        int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
-                        int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
-                        Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
-                        Preprocessing.performPaddingVert(_processedFrame, aUHeight);
-                        resized = true;
-                    }
-                    src = Preprocessing.prepareSrc(_processedFrame);
-                    shape = Preprocessing.prepareShape(_processedFrame);
 
-                    
-                    IDisposableReadOnlyCollection<OrtValue> sampleOutput;
-                    if(_currModel != null)
+                    if(_trackingMode == true) //TODO: ADD TRACKING MODE BUTTON
                     {
-                        
-                        sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
-
-                        ///////////////////////////Postprocessing ////////////////////////////////
-                        ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+                        //capture the frame, process it within the InferenceSession, display the output
+                        ///////////////////////////preprocessing ////////////////////////////////
+                        if(Preprocessing.ValidateImgDim(_processedFrame) == false)
+                        {
+                            ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
+                            origWidth = _processedFrame.Width;
+                            origHeight = _processedFrame.Height;
+                            int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
+                            int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
+                            Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
+                            Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                            resized = true;
+                        }
+                        src = Preprocessing.prepareSrc(_processedFrame);
+                        shape = Preprocessing.prepareShape(_processedFrame);
 
                         
-                        if(_trackingSession != null)
+                        IDisposableReadOnlyCollection<OrtValue> sampleOutput;
+                        if(_currModel != null)
                         {
-                            //prepare detections for BYTETrack
-                            List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
-                            foreach(Detection val in detections)
-                            {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
+                            
+                            sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
 
-                            //update BYTETrack and get new tracking results
-                            List<STrack> outputTracks = _trackingSession.update(BTObjs);
-                            detections = Postprocessing.ListSTrackToDet(outputTracks);   
-                        }
+                            ///////////////////////////Postprocessing ////////////////////////////////
+                            ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
 
-                        //draw our detections and resize image back to original size if necessary
-                        Postprocessing.plotDetections(detections,  _processedFrame);
-                        if(resized == true)
-                        {
-                            //resize image back to original framesize to fit pictureBox
-                            _processedFrame = new Mat(_processedFrame, ROICrop);
-                            Preprocessing.performResize(_processedFrame, origWidth, origHeight);
-                            resized = false;
-                        }
-                        sampleOutput.Dispose();
+                            
+                            if(_trackingSession != null)
+                            {
+                                //prepare detections for BYTETrack
+                                List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
+                                foreach(Detection val in detections)
+                                {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
+
+                                //update BYTETrack and get new tracking results
+                                List<STrack> outputTracks = _trackingSession.update(BTObjs);
+                                detections = Postprocessing.ListSTrackToDet(outputTracks);   
+                            }
+
+                            //draw our detections and resize image back to original size if necessary
+                            Postprocessing.plotDetections(detections,  _processedFrame);
+                            if(resized == true)
+                            {
+                                //resize image back to original framesize to fit pictureBox
+                                _processedFrame = new Mat(_processedFrame, ROICrop);
+                                Preprocessing.performResize(_processedFrame, origWidth, origHeight);
+                                resized = false;
+                            }
+                            sampleOutput.Dispose();
+                        }   
                     }
-
-        
-
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
@@ -221,12 +225,13 @@ namespace Tracking
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
             
             double elapsedSeconds = totalRuntime.Elapsed.TotalSeconds;
-            if (elapsedSeconds > 0)
+            if (elapsedSeconds > 0 && fpsDisplay != null)
             {
                 double fpsVal = frameCnt/elapsedSeconds;
-                fpsDisplay = $"FPS: {fpsVal:F1}";            
+                fpsDisplay = $"FPS: {fpsVal:F1}";   
+                Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 20), HersheyFonts.HersheyComplexSmall, 1, Scalar.White);
+         
             }
-            Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 20), HersheyFonts.HersheyComplexSmall, 1, Scalar.White);
 
             _displayFrame = BitmapConverter.ToBitmap(_processedFrame);
             pictureBox1.Image = _displayFrame;
@@ -261,7 +266,7 @@ namespace Tracking
             _alive = true;
             _captureThread.Start();
             _swapThread.Start();
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 15, 150, (float)0.5, (float)0.5, (float)0.6);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 16, 150, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
             return;
@@ -297,6 +302,13 @@ namespace Tracking
             DisconnectCamera.Enabled = false;
             StartStream.Enabled = false;
             StartStream.Visible = false;
+        }
+
+        private void SerialPortSetup()
+        {
+            _serialPort = new SerialPort();
+            _serialPort.PortName = "COM3";
+            _serialPort.BaudRate = 9600;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
