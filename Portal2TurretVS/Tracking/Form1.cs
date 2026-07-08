@@ -1,3 +1,4 @@
+using ByteTrackCSharp;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
@@ -5,6 +6,7 @@ using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.X509Certificates;
@@ -37,8 +39,17 @@ namespace Tracking
         private float[]? src;
         private long[]? shape;
         private bool resized = false;
-        private Rect ROICrop;
+        private OpenCvSharp.Rect ROICrop;
         private int origWidth, origHeight;
+
+
+        private int frameCnt = 0;
+        private Stopwatch totalRuntime = new Stopwatch();
+        string fpsDisplay = "Calculating...";
+
+
+        private BYTETracker? _trackingSession;
+
 
         public Form1()
         {
@@ -59,8 +70,6 @@ namespace Tracking
 
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. Need to be adjusted when publishing TODO
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
-
-
             try
             {
                 using var options = SessionOptions.MakeSessionOptionWithCudaProvider(0);
@@ -68,7 +77,13 @@ namespace Tracking
                 
             }   // use CUDA
             catch
-            { _currModel = new InferenceSession(_modelPath);}   // fallback and use CPU            
+            { 
+                Console.WriteLine("falling back to CPU");
+                _currModel = new InferenceSession(_modelPath);    
+            }   // fallback and use CPU    
+
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 14, 30, (float)0.4, (float)0.5, (float)0.7);
+
         }
 
         private void Form1_Closed(object? sender, EventArgs e)
@@ -86,7 +101,7 @@ namespace Tracking
             }
             if(_currModel != null)
             {
-                 _currModel.Dispose();
+                _currModel.Dispose();
             }
            
         }
@@ -123,6 +138,7 @@ namespace Tracking
 
         private void Stream()
         {
+            totalRuntime.Start();
             while (_alive == true)
             {
                 Thread.Sleep(100);
@@ -131,7 +147,7 @@ namespace Tracking
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
 
                     //capture the frame, process it within the InferenceSession, display the output
-                    ///////////////////////////preprocessing stage////////////////////////////////
+                    ///////////////////////////preprocessing ////////////////////////////////
                     _processedFrame = _srcFrame;
                     if(Preprocessing.ValidateImgDim(_processedFrame) == false)
                     {
@@ -144,7 +160,6 @@ namespace Tracking
                         Preprocessing.performPaddingVert(_processedFrame, aUHeight);
                         resized = true;
                     }
-
                     src = Preprocessing.prepareSrc(_processedFrame);
                     shape = Preprocessing.prepareShape(_processedFrame);
 
@@ -155,11 +170,25 @@ namespace Tracking
                         
                         sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
 
-                        ///////////////////////////Postprocessing stage////////////////////////////////
+                        ///////////////////////////Postprocessing ////////////////////////////////
                         ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+
+                        //prepare detections for BYTETrack
+                        if(_trackingSession != null)
+                        {
+                            List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
+                            foreach(Detection val in detections)
+                            {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
+
+
+                            List<STrack> outputTracks = _trackingSession.update(BTObjs);
+                            detections = Postprocessing.ListSTrackToDet(outputTracks);   
+                        }
+
                         Postprocessing.plotDetections(detections,  _processedFrame);
                         if(resized == true)
                         {
+                            //resize image back to original framesize to fit pictureBox
                             _processedFrame = new Mat(_processedFrame, ROICrop);
                             Preprocessing.performResize(_processedFrame, origWidth, origHeight);
                             resized = false;
@@ -174,6 +203,7 @@ namespace Tracking
                         //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
                         //we basically delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
                         pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
+                        frameCnt++;
                     }
                 }
 
@@ -187,10 +217,19 @@ namespace Tracking
             if (!_alive || _processedFrame == null || _processedFrame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
-            // _frame.ConvertTo(_frame, MatType.CV_8U);
+            
+            double elapsedSeconds = totalRuntime.Elapsed.TotalSeconds;
+            if (elapsedSeconds > 0)
+            {
+                double fpsVal = frameCnt/elapsedSeconds;
+                fpsDisplay = $"FPS: {fpsVal:F1}";            
+            }
+            Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 20), HersheyFonts.HersheyComplexSmall, 1, Scalar.White);
+
             _displayFrame = BitmapConverter.ToBitmap(_processedFrame);
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
+            frameCnt++;
         }
 
         private void StartStream_Click(object sender, EventArgs e) //toggle

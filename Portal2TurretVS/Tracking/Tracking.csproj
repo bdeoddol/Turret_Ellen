@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <!-- <PackageReference Include="MathNet.Numerics" Version="5.0.0" /> package to support bytetrack algo -->
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.27.0" />
     <!-- <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu.Windows" Version="1.27.0" /> package for modern nvidia gpus-->
     <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260602" />
@@ -44,6 +45,11 @@
       <!--copies the file path to the bin folder as part of the build such that it exists alongside the output exe file-->
     </None>
   </ItemGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
 
 
 </Project>

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using ByteTrackCSharp;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 
@@ -66,7 +67,7 @@ public class Postprocessing
         ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0), 0.5);
         // ImmutableList<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
-        int ConfAsPercent;
+        int ConfAsPercent, detID;
         for(int det = 0; det < outputData.Count; det++)
         {
             if(det >= outputData.Count){break;}
@@ -78,29 +79,66 @@ public class Postprocessing
             cfd = outputData[det].conf;
             cls = outputData[det].classID;
             ConfAsPercent = (int)(cfd*100);
+            detID = outputData[det].detID;
             
             width = x2-x1;
             height = y2-y1;
 
             //plot our detection
-            plotSingularHelper((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, frame);
+            plotSingularHelper((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, detID, frame);
         }
         
         
         return;
     }
 
-    private static void plotSingularHelper(int x1, int y1, int width, int height, int ConfPercent, Mat frame)
+    private static void plotSingularHelper(int x1, int y1, int width, int height, int ConfPercent, int detID, Mat frame)
     {
-        Rect boundingBox = new Rect(x1, y1, width, height); //construct our bounding box
+        OpenCvSharp.Rect boundingBox = new OpenCvSharp.Rect(x1, y1, width, height); //construct our bounding box
         Scalar color = new Scalar(4, 28, 255); //construct w/ bgr values for bright red
         OpenCvSharp.Point upLeft = new OpenCvSharp.Point(x1, y1-5); //our text will be built starting from bottom left, attach bottom left to the top left of our bounding box
 
         //draw our boxes
         Cv2.Rectangle(frame, boundingBox, color, 2, LineTypes.Link8, 0);
-        Cv2.PutText(frame, "Person: "  + ConfPercent + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
+        Cv2.PutText(frame, "Person " + detID +  ": "  + ConfPercent + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
 
         return;
     }
 
+    public static ByteTrackCSharp.Object DetToByteTrackObject(Detection detectContainer)
+    {
+        float width = detectContainer.x2-detectContainer.x1;
+        float height = detectContainer.y2-detectContainer.y1;
+
+        ByteTrackCSharp.Rect box = new ByteTrackCSharp.Rect(detectContainer.x1, detectContainer.y1, width, height);
+        ByteTrackCSharp.Object retObj = new ByteTrackCSharp.Object(box , (int)detectContainer.classID, detectContainer.conf);
+
+        return retObj; 
+    }
+
+    public static STrack ObjToSTrack(ByteTrackCSharp.Object obj)
+    {
+        STrack retTrack = new STrack(obj.rect, obj.prob, obj.label);
+        return retTrack;
+    }
+
+    public static ImmutableList<Detection> ListSTrackToDet(List<STrack> track)
+    {
+
+        List<Detection> mutDet = new List<Detection>();
+        foreach(STrack val in track)
+        {
+            ByteTrackCSharp.Rect BTRect = val.getRect();
+            float score = val.getScore();
+            int trackID = val.TrackId;
+            int classID = val.classID; //new datamember in STrack class
+
+            Detection det = new Detection(BTRect.x(), BTRect.y(), BTRect.x() + BTRect.width(), BTRect.y() + BTRect.height(), score, (float)classID, trackID);
+            mutDet.Add(det);
+        }    
+        ImmutableList<Detection> detections = mutDet.ToImmutableList();
+                        
+
+        return detections;
+    }
 }

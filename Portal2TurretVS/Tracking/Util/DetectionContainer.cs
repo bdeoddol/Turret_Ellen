@@ -1,7 +1,7 @@
 using System.Dynamic;
 using System.Security.Cryptography;
 
-public class Detection(float x1a, float y1a, float x2a, float y2a, float confa, float classIDa)
+public class Detection(float x1a, float y1a, float x2a, float y2a, float confa, float classIDa, int detIDa = -1)
 {
 
         public float x1{ get; set;} = x1a;
@@ -10,5 +10,6 @@ public class Detection(float x1a, float y1a, float x2a, float y2a, float confa, 
         public float y2{get; set;} = y2a;
         public float conf{get; set;} = confa;
         public float classID{get; set;} = classIDa;
+        public int detID{get; set;} = detIDa; //track IDs set to -1 by default, assigned by BYTETRACK
 
 }
