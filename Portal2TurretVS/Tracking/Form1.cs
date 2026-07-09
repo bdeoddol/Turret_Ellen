@@ -42,8 +42,6 @@ namespace Tracking
         private float[]? src;
         private long[]? shape;
         private bool resized = false;
-        private OpenCvSharp.Rect ROICrop;
-        private int origWidth, origHeight;
 
 
         private int frameCnt = 0;
@@ -70,7 +68,7 @@ namespace Tracking
             _captureThread?.IsBackground = true;
 
 
-            _trackingMode = false;
+            _trackingMode = true;
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
@@ -151,63 +149,12 @@ namespace Tracking
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() ||  !pictureBox1.IsHandleCreated) { continue; }
                     _processedFrame = _srcFrame;
 
-                    if(_trackingMode == true) //TODO: ADD TRACKING MODE BUTTON
-                    {
-                        //capture the frame, process it within the InferenceSession, display the output
-                        ///////////////////////////preprocessing ////////////////////////////////
-                        if(Preprocessing.ValidateImgDim(_processedFrame) == false)
-                        {
-                            ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
-                            origWidth = _processedFrame.Width;
-                            origHeight = _processedFrame.Height;
-                            int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
-                            int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
-                            Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
-                            Preprocessing.performPaddingVert(_processedFrame, aUHeight);
-                            resized = true;
-                        }
-                        src = Preprocessing.prepareSrc(_processedFrame);
-                        shape = Preprocessing.prepareShape(_processedFrame);
-
-                        
-                        IDisposableReadOnlyCollection<OrtValue> sampleOutput;
-                        if(_currModel != null)
-                        {
-                            
-                            sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
-
-                            ///////////////////////////Postprocessing ////////////////////////////////
-                            ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
-
-                            
-                            if(_trackingSession != null)
-                            {
-                                //prepare detections for BYTETrack
-                                List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
-                                foreach(Detection val in detections)
-                                {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
-
-                                //update BYTETrack and get new tracking results
-                                List<STrack> outputTracks = _trackingSession.update(BTObjs);
-                                detections = Postprocessing.ListSTrackToDet(outputTracks);   
-                            }
-
-                            //draw our detections and resize image back to original size if necessary
-                            Postprocessing.plotDetections(detections,  _processedFrame);
-                            if(resized == true)
-                            {
-                                //resize image back to original framesize to fit pictureBox
-                                _processedFrame = new Mat(_processedFrame, ROICrop);
-                                Preprocessing.performResize(_processedFrame, origWidth, origHeight);
-                                resized = false;
-                            }
-                            sampleOutput.Dispose();
-                        }   
-                    }
+                    if(_trackingMode == true ) //TODO: ADD TRACKING MODE BUTTON
+                    {trackState();}
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
-                        //invoke marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
-                        //we basically delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
+                        // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
+                        //we delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
                         pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
                         frameCnt++;
                     }
@@ -317,6 +264,55 @@ namespace Tracking
         }
         
 
+        private void trackState()
+        {
+             //capture the frame, process it within the InferenceSession, display the output
+            ///////////////////////////preprocessing ////////////////////////////////
+            if(_processedFrame == null ){return;}
+            OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
+            int origWidth = _processedFrame.Width;
+            int origHeight = _processedFrame.Height;
+            if(Preprocessing.ValidateImgDim(_processedFrame) == false)
+            {
+                int aUWidth = Preprocessing.AlignUp(_processedFrame.Width)*32;
+                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height)*32;
+                Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
+                Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                resized = true;
+            }
+            src = Preprocessing.prepareSrc(_processedFrame);
+            shape = Preprocessing.prepareShape(_processedFrame);
 
+            
+            if(_currModel != null)
+            {
+                
+                IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
+                ///////////////////////////Postprocessing ////////////////////////////////
+                ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+                if(_trackingSession != null)
+                {
+                    //prepare detections for BYTETrack
+                    List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
+                    foreach(Detection val in detections)
+                    {BTObjs.Add(Postprocessing.DetToByteTrackObject(val));} 
+
+                    //update BYTETrack and get new tracking results
+                    List<STrack> outputTracks = _trackingSession.update(BTObjs);
+                    detections = Postprocessing.ListSTrackToDet(outputTracks);   
+                }
+
+                //draw our detections and resize image back to original size if necessary
+                Postprocessing.plotDetections(detections,  _processedFrame);
+                if(resized == true)
+                {
+                    //resize image back to original framesize to fit pictureBox
+                    _processedFrame = new Mat(_processedFrame, ROICrop);
+                    Preprocessing.performResize(_processedFrame, origWidth, origHeight);
+                    resized = false;
+                }
+                sampleOutput.Dispose();
+            }   
+        }
     }
 }
