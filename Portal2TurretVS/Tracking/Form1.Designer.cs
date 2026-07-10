@@ -33,6 +33,7 @@
             saveFileDialog1 = new SaveFileDialog();
             ConnectCamera = new Button();
             DisconnectCamera = new Button();
+            PortDropDown = new ComboBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -79,11 +80,22 @@
             DisconnectCamera.UseVisualStyleBackColor = true;
             DisconnectCamera.Click += DisconnectCamera_Click;
             // 
+            // PortDropDown
+            // 
+            PortDropDown.FormattingEnabled = true;
+            PortDropDown.Location = new Point(12, 577);
+            PortDropDown.Name = "PortDropDown";
+            PortDropDown.Size = new Size(121, 23);
+            PortDropDown.TabIndex = 4;
+            PortDropDown.Text = "COM Port";
+            PortDropDown.SelectedIndexChanged += PortDropDown_SelectedIndexChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(PortDropDown);
             Controls.Add(DisconnectCamera);
             Controls.Add(ConnectCamera);
             Controls.Add(pictureBox1);
@@ -105,5 +117,6 @@
         private SaveFileDialog saveFileDialog1;
         private Button ConnectCamera;
         private Button DisconnectCamera;
+        private ComboBox PortDropDown;
     }
 }
