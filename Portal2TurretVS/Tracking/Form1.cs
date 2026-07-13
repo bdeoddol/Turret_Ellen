@@ -6,6 +6,7 @@ using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Numerics.Tensors;
@@ -49,6 +50,9 @@ namespace Tracking
         string? fpsDisplay;
 
         private SerialPort? _serialPort;
+        private int[] _baudRates = { 9600, 19200, 38400, 57600, 115200 };
+        private int _selectedBaud;
+        private string _selectedPort;
 
         public Form1()
         {
@@ -85,7 +89,11 @@ namespace Tracking
 
 
             PortDropDown.DataSource = SerialPort.GetPortNames();
+            BaudDropDown.DataSource = _baudRates;
+            PortDropDown.SelectedIndex = 0;
+            BaudDropDown.SelectedIndex = 0;
 
+            SerialPortSetup();
 
 
         }
@@ -256,6 +264,13 @@ namespace Tracking
         private void SerialPortSetup()
         {
 
+            _selectedPort = PortDropDown.SelectedText;
+            _selectedBaud = (int)BaudDropDown.SelectedItem;
+            _serialPort = new SerialPort(_selectedPort);
+            _serialPort.BaudRate = _selectedBaud;
+            _serialPort.Open();
+            _serialPort.Write("testing string write");
+
 
         }
 
@@ -318,7 +333,23 @@ namespace Tracking
 
         private void PortDropDown_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            _selectedPort = PortDropDown.SelectedText;
         }
+
+        private void PortRefresh_Click(object sender, EventArgs e)
+        {
+            PortDropDown.DataSource = null;
+            PortDropDown.DataSource = SerialPort.GetPortNames();
+        }
+
+        private void BaudDropDown_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(BaudDropDown.SelectedItem != null)
+            {
+                _selectedBaud = (int)BaudDropDown.SelectedItem;
+            }
+        }
+
+
     }
 }

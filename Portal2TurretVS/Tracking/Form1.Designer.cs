@@ -34,6 +34,10 @@
             ConnectCamera = new Button();
             DisconnectCamera = new Button();
             PortDropDown = new ComboBox();
+            PortRefresh = new Button();
+            BaudDropDown = new ComboBox();
+            PortNameLabel = new Label();
+            BaudeRateLabel = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -83,18 +87,60 @@
             // PortDropDown
             // 
             PortDropDown.FormattingEnabled = true;
-            PortDropDown.Location = new Point(12, 577);
+            PortDropDown.Location = new Point(12, 486);
             PortDropDown.Name = "PortDropDown";
             PortDropDown.Size = new Size(121, 23);
             PortDropDown.TabIndex = 4;
             PortDropDown.Text = "COM Port";
             PortDropDown.SelectedIndexChanged += PortDropDown_SelectedIndexChanged;
             // 
+            // PortRefresh
+            // 
+            PortRefresh.Location = new Point(12, 562);
+            PortRefresh.Name = "PortRefresh";
+            PortRefresh.Size = new Size(75, 23);
+            PortRefresh.TabIndex = 5;
+            PortRefresh.Text = "Refresh";
+            PortRefresh.UseVisualStyleBackColor = true;
+            PortRefresh.Click += PortRefresh_Click;
+            // 
+            // BaudDropDown
+            // 
+            BaudDropDown.FormattingEnabled = true;
+            BaudDropDown.Location = new Point(12, 533);
+            BaudDropDown.Name = "BaudDropDown";
+            BaudDropDown.Size = new Size(121, 23);
+            BaudDropDown.TabIndex = 6;
+            BaudDropDown.Text = "Baud Rate";
+            BaudDropDown.SelectedIndexChanged += BaudDropDown_SelectedIndexChanged;
+            // 
+            // PortNameLabel
+            // 
+            PortNameLabel.AutoSize = true;
+            PortNameLabel.Location = new Point(12, 468);
+            PortNameLabel.Name = "PortNameLabel";
+            PortNameLabel.Size = new Size(64, 15);
+            PortNameLabel.TabIndex = 7;
+            PortNameLabel.Text = "Port Name";
+            // 
+            // BaudeRateLabel
+            // 
+            BaudeRateLabel.AutoSize = true;
+            BaudeRateLabel.Location = new Point(12, 515);
+            BaudeRateLabel.Name = "BaudeRateLabel";
+            BaudeRateLabel.Size = new Size(66, 15);
+            BaudeRateLabel.TabIndex = 8;
+            BaudeRateLabel.Text = "Baude Rate";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(BaudeRateLabel);
+            Controls.Add(PortNameLabel);
+            Controls.Add(BaudDropDown);
+            Controls.Add(PortRefresh);
             Controls.Add(PortDropDown);
             Controls.Add(DisconnectCamera);
             Controls.Add(ConnectCamera);
@@ -108,6 +154,7 @@
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -118,5 +165,9 @@
         private Button ConnectCamera;
         private Button DisconnectCamera;
         private ComboBox PortDropDown;
+        private Button PortRefresh;
+        private ComboBox BaudDropDown;
+        private Label PortNameLabel;
+        private Label BaudeRateLabel;
     }
 }
