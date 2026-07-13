@@ -14,8 +14,13 @@ class OpenPort
         {
             Console.WriteLine(val);
         }
-        String portName = "COM4";
+        String portName = "hi";
         _serialPort = new SerialPort(portName);
+        _serialPort.BaudRate = 9600;
+
+        _serialPort.Open();
+        // _serialPort.WriteLine("hi testing");
+        _serialPort.Close();
         
     }
 }

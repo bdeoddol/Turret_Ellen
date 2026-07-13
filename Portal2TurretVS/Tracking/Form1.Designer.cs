@@ -38,6 +38,9 @@
             BaudDropDown = new ComboBox();
             PortNameLabel = new Label();
             BaudeRateLabel = new Label();
+            ConnectArduino = new Button();
+            TrackEnable = new Button();
+            DisableTrack = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -62,7 +65,6 @@
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
-            pictureBox1.Click += pictureBox1_Click;
             // 
             // ConnectCamera
             // 
@@ -132,11 +134,43 @@
             BaudeRateLabel.TabIndex = 8;
             BaudeRateLabel.Text = "Baude Rate";
             // 
+            // ConnectArduino
+            // 
+            ConnectArduino.Location = new Point(12, 629);
+            ConnectArduino.Name = "ConnectArduino";
+            ConnectArduino.Size = new Size(121, 24);
+            ConnectArduino.TabIndex = 9;
+            ConnectArduino.Text = "Connect Arduino";
+            ConnectArduino.UseVisualStyleBackColor = true;
+            ConnectArduino.Click += ConnectArduino_Click;
+            // 
+            // TrackEnable
+            // 
+            TrackEnable.Location = new Point(12, 429);
+            TrackEnable.Name = "TrackEnable";
+            TrackEnable.Size = new Size(102, 23);
+            TrackEnable.TabIndex = 10;
+            TrackEnable.Text = "Enable Tracking";
+            TrackEnable.UseVisualStyleBackColor = true;
+            TrackEnable.Click += TrackEnable_Click;
+            // 
+            // DisableTrack
+            // 
+            DisableTrack.Location = new Point(12, 429);
+            DisableTrack.Name = "DisableTrack";
+            DisableTrack.Size = new Size(102, 23);
+            DisableTrack.TabIndex = 11;
+            DisableTrack.Text = "Disable Tracking";
+            DisableTrack.UseVisualStyleBackColor = true;
+            DisableTrack.Click += DisableTrack_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(TrackEnable);
+            Controls.Add(ConnectArduino);
             Controls.Add(BaudeRateLabel);
             Controls.Add(PortNameLabel);
             Controls.Add(BaudDropDown);
@@ -146,6 +180,7 @@
             Controls.Add(ConnectCamera);
             Controls.Add(pictureBox1);
             Controls.Add(StartStream);
+            Controls.Add(DisableTrack);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MinimumSize = new Size(904, 568);
             Name = "Form1";
@@ -169,5 +204,8 @@
         private ComboBox BaudDropDown;
         private Label PortNameLabel;
         private Label BaudeRateLabel;
+        private Button ConnectArduino;
+        private Button TrackEnable;
+        private Button DisableTrack;
     }
 }

@@ -49,15 +49,16 @@ namespace Tracking
         private Stopwatch totalRuntime = new Stopwatch();
         string? fpsDisplay;
 
+        private bool _ardConnected;
         private SerialPort? _serialPort;
         private int[] _baudRates = { 9600, 19200, 38400, 57600, 115200 };
         private int _selectedBaud;
-        private string _selectedPort;
+        private string? _selectedPort;
 
         public Form1()
         {
             InitializeComponent();
-            Load += Form1_Load;
+            // Load += Form1_Load;
             FormClosed += Form1_Closed;
             FormClosing += Form1_FormClosing;
         }
@@ -72,7 +73,7 @@ namespace Tracking
             _captureThread?.IsBackground = true;
 
 
-            _trackingMode = true;
+            deactivateTrackMode();
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
@@ -90,11 +91,9 @@ namespace Tracking
 
             PortDropDown.DataSource = SerialPort.GetPortNames();
             BaudDropDown.DataSource = _baudRates;
-            PortDropDown.SelectedIndex = 0;
+            try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
-
-            SerialPortSetup();
-
+            _ardConnected = false;
 
         }
 
@@ -114,6 +113,11 @@ namespace Tracking
             if (_currModel != null)
             {
                 _currModel.Dispose();
+            }
+            if (_serialPort != null)
+            {
+                _serialPort.Close();
+                _serialPort.Dispose();
             }
 
         }
@@ -204,8 +208,6 @@ namespace Tracking
                 pictureBox1.Show();
                 _running = true;
             }
-
-
             return;
         }
 
@@ -250,7 +252,6 @@ namespace Tracking
             ConnectCamera.Enabled = false;
             DisconnectCamera.Enabled = true;
             StartStream.Enabled = true;
-            StartStream.Visible = true;
         }
 
         private void SetCameraButtonActive()
@@ -258,26 +259,12 @@ namespace Tracking
             ConnectCamera.Enabled = true;
             DisconnectCamera.Enabled = false;
             StartStream.Enabled = false;
-            StartStream.Visible = false;
         }
 
-        private void SerialPortSetup()
-        {
+        //private void pictureBox1_Click(object sender, EventArgs e)
+        //{
 
-            _selectedPort = PortDropDown.SelectedText;
-            _selectedBaud = (int)BaudDropDown.SelectedItem;
-            _serialPort = new SerialPort(_selectedPort);
-            _serialPort.BaudRate = _selectedBaud;
-            _serialPort.Open();
-            _serialPort.Write("testing string write");
-
-
-        }
-
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-
-        }
+        //}
 
 
         private void trackState()
@@ -344,12 +331,55 @@ namespace Tracking
 
         private void BaudDropDown_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if(BaudDropDown.SelectedItem != null)
+            if (BaudDropDown.SelectedItem != null){ _selectedBaud = (int)BaudDropDown.SelectedItem; }
+        }
+
+        private void ConnectArduino_Click(object sender, EventArgs e)
+        { SerialPortConnect();}
+
+        private void SerialPortConnect()
+        {
+
+            _selectedPort = PortDropDown.SelectedText;
+            if (BaudDropDown.SelectedItem is int)
             {
                 _selectedBaud = (int)BaudDropDown.SelectedItem;
             }
+            _serialPort = new SerialPort(_selectedPort);
+            _serialPort.BaudRate = _selectedBaud;
+            try { _serialPort.Open(); }
+            catch
+            {
+                MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
+                _ardConnected = false;
+                return;
+            }
+            _ardConnected = true;
+            return;
         }
 
+        private void TrackEnable_Click(object sender, EventArgs e)
+        { activateTrackMode();}
 
+        private void activateTrackMode()
+        {
+            _trackingMode = true;
+            TrackEnable.Enabled = false;
+            TrackEnable.Visible = false;
+            DisableTrack.Enabled = true;
+            DisableTrack.Visible = true;
+        }
+
+        private void DisableTrack_Click(object sender, EventArgs e)
+        { deactivateTrackMode();}
+
+        private void deactivateTrackMode()
+        {
+            _trackingMode = false;
+            TrackEnable.Enabled = true;
+            TrackEnable.Visible = true;
+            DisableTrack.Enabled = false;
+            DisableTrack.Visible = false;
+        }
     }
 }
