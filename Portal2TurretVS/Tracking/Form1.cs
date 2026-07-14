@@ -55,6 +55,11 @@ namespace Tracking
         private int _selectedBaud;
         private string? _selectedPort;
 
+
+        TurrState _currState;
+
+
+        ///////////////////////////setup and teardown///////////////////////////
         public Form1()
         {
             InitializeComponent();
@@ -135,6 +140,10 @@ namespace Tracking
             if (_captureThread != null && _swapThread != null) { _captureThread?.Join(500); _swapThread?.Join(500); }
         }
 
+
+
+
+    ///////////////////////////Threads///////////////////////////
         private void grabFrame()
         {
             while (_alive == true)
@@ -163,8 +172,14 @@ namespace Tracking
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _processedFrame = _srcFrame;
 
-                    if (_trackingMode == true) //TODO: ADD TRACKING MODE BUTTON
-                    { trackInFrame(); }
+                    if (_trackingMode == true) 
+                    { 
+                        trackInFrame();
+                        if(_ardConnected == true)
+                        {
+                            
+                        }
+                    }
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
@@ -186,11 +201,11 @@ namespace Tracking
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
 
             double elapsedSeconds = totalRuntime.Elapsed.TotalSeconds;
-            if (elapsedSeconds > 0 && fpsDisplay != null)
+            if (elapsedSeconds > 0)
             {
                 double fpsVal = frameCnt / elapsedSeconds;
                 fpsDisplay = $"FPS: {fpsVal:F1}";
-                Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 20), HersheyFonts.HersheyComplexSmall, 1, Scalar.White);
+                Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 25), HersheyFonts.HersheySimplex, 0.5, Scalar.White);
 
             }
 
@@ -198,6 +213,115 @@ namespace Tracking
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
             frameCnt++;
+        }
+
+        private void trackInFrame()
+        {
+            //capture the frame, process it within the InferenceSession, display the output
+            ///////////////////////////preprocessing ////////////////////////////////
+            if (_processedFrame == null) { return; }
+            OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
+            int origWidth = _processedFrame.Width;
+            int origHeight = _processedFrame.Height;
+            if (Preprocessing.ValidateImgDim(_processedFrame) == false)
+            {
+                int aUWidth = Preprocessing.AlignUp(_processedFrame.Width) * 32;
+                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;
+                Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
+                Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                resized = true;
+            }
+            src = Preprocessing.prepareSrc(_processedFrame);
+            shape = Preprocessing.prepareShape(_processedFrame);
+
+
+            if (_currModel != null)
+            {
+
+                IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
+                ///////////////////////////Postprocessing ////////////////////////////////
+                ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+                if (_trackingSession != null)
+                {
+                    //prepare detections for BYTETrack
+                    List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
+                    foreach (Detection val in detections)
+                    { BTObjs.Add(Postprocessing.DetToByteTrackObject(val)); }
+
+                    //update BYTETrack and get new tracking results
+                    List<STrack> outputTracks = _trackingSession.update(BTObjs);
+                    detections = Postprocessing.ListSTrackToDet(outputTracks);
+                }
+
+                //draw our detections and resize image back to original size if necessary
+                Postprocessing.plotDetections(detections, _processedFrame);
+                if (resized == true)
+                {
+                    //resize image back to original framesize to fit pictureBox
+                    _processedFrame = new Mat(_processedFrame, ROICrop);
+                    Preprocessing.performResize(_processedFrame, origWidth, origHeight);
+                    resized = false;
+                }
+
+                //update the state variable TODO:
+
+
+
+
+
+
+
+
+
+                sampleOutput.Dispose();
+            }
+            
+        }
+
+
+
+        ///////////////////////////buttons///////////////////////////
+
+        private void PortDropDown_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _selectedPort = PortDropDown.SelectedText;
+        }
+
+        private void PortRefresh_Click(object sender, EventArgs e)
+        {
+            PortDropDown.DataSource = null;
+            PortDropDown.DataSource = SerialPort.GetPortNames();
+        }
+
+        private void BaudDropDown_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (BaudDropDown.SelectedItem != null){ _selectedBaud = (int)BaudDropDown.SelectedItem; }
+        }
+
+        private void ConnectArduino_Click(object sender, EventArgs e)
+        { SerialPortConnect();}
+
+        private void SerialPortConnect()
+        {
+            
+            _selectedPort = PortDropDown.SelectedText;
+            if (BaudDropDown.SelectedItem is int)
+            {
+                _selectedBaud = (int)BaudDropDown.SelectedItem;
+            }
+            try {             
+                _serialPort = new SerialPort(_selectedPort);
+                _serialPort.BaudRate = _selectedBaud;
+                _serialPort.Open();
+                }
+            catch
+            {
+                MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
+                _ardConnected = false;
+                return;
+            }
+            _ardConnected = true;
+            return;
         }
 
         private void StartStream_Click(object sender, EventArgs e) //toggle
@@ -265,100 +389,6 @@ namespace Tracking
         //{
 
         //}
-
-
-        private void trackInFrame()
-        {
-            //capture the frame, process it within the InferenceSession, display the output
-            ///////////////////////////preprocessing ////////////////////////////////
-            if (_processedFrame == null) { return; }
-            OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
-            int origWidth = _processedFrame.Width;
-            int origHeight = _processedFrame.Height;
-            if (Preprocessing.ValidateImgDim(_processedFrame) == false)
-            {
-                int aUWidth = Preprocessing.AlignUp(_processedFrame.Width) * 32;
-                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;
-                Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
-                Preprocessing.performPaddingVert(_processedFrame, aUHeight);
-                resized = true;
-            }
-            src = Preprocessing.prepareSrc(_processedFrame);
-            shape = Preprocessing.prepareShape(_processedFrame);
-
-
-            if (_currModel != null)
-            {
-
-                IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
-                ///////////////////////////Postprocessing ////////////////////////////////
-                ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
-                if (_trackingSession != null)
-                {
-                    //prepare detections for BYTETrack
-                    List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
-                    foreach (Detection val in detections)
-                    { BTObjs.Add(Postprocessing.DetToByteTrackObject(val)); }
-
-                    //update BYTETrack and get new tracking results
-                    List<STrack> outputTracks = _trackingSession.update(BTObjs);
-                    detections = Postprocessing.ListSTrackToDet(outputTracks);
-                }
-
-                //draw our detections and resize image back to original size if necessary
-                Postprocessing.plotDetections(detections, _processedFrame);
-                if (resized == true)
-                {
-                    //resize image back to original framesize to fit pictureBox
-                    _processedFrame = new Mat(_processedFrame, ROICrop);
-                    Preprocessing.performResize(_processedFrame, origWidth, origHeight);
-                    resized = false;
-                }
-                sampleOutput.Dispose();
-            }
-        }
-
-        private void PortDropDown_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            _selectedPort = PortDropDown.SelectedText;
-        }
-
-        private void PortRefresh_Click(object sender, EventArgs e)
-        {
-            PortDropDown.DataSource = null;
-            PortDropDown.DataSource = SerialPort.GetPortNames();
-        }
-
-        private void BaudDropDown_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (BaudDropDown.SelectedItem != null){ _selectedBaud = (int)BaudDropDown.SelectedItem; }
-        }
-
-        private void ConnectArduino_Click(object sender, EventArgs e)
-        { SerialPortConnect();}
-
-        private void SerialPortConnect()
-        {
-            
-            _selectedPort = PortDropDown.SelectedText;
-            if (BaudDropDown.SelectedItem is int)
-            {
-                _selectedBaud = (int)BaudDropDown.SelectedItem;
-            }
-            try {             
-                _serialPort = new SerialPort(_selectedPort);
-                _serialPort.BaudRate = _selectedBaud;
-                _serialPort.Open();
-                }
-            catch
-            {
-                MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
-                _ardConnected = false;
-                return;
-            }
-            _ardConnected = true;
-            return;
-        }
 
         private void TrackEnable_Click(object sender, EventArgs e)
         { activateTrackMode();}
