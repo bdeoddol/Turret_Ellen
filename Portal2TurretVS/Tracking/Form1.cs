@@ -164,7 +164,7 @@ namespace Tracking
                     _processedFrame = _srcFrame;
 
                     if (_trackingMode == true) //TODO: ADD TRACKING MODE BUTTON
-                    { trackState(); }
+                    { trackInFrame(); }
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
@@ -267,7 +267,7 @@ namespace Tracking
         //}
 
 
-        private void trackState()
+        private void trackInFrame()
         {
             //capture the frame, process it within the InferenceSession, display the output
             ///////////////////////////preprocessing ////////////////////////////////
@@ -339,15 +339,17 @@ namespace Tracking
 
         private void SerialPortConnect()
         {
-
+            
             _selectedPort = PortDropDown.SelectedText;
             if (BaudDropDown.SelectedItem is int)
             {
                 _selectedBaud = (int)BaudDropDown.SelectedItem;
             }
-            _serialPort = new SerialPort(_selectedPort);
-            _serialPort.BaudRate = _selectedBaud;
-            try { _serialPort.Open(); }
+            try {             
+                _serialPort = new SerialPort(_selectedPort);
+                _serialPort.BaudRate = _selectedBaud;
+                _serialPort.Open();
+                }
             catch
             {
                 MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
