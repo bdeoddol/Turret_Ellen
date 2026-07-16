@@ -275,9 +275,13 @@ namespace Tracking
 
         private void stateMachine()
         {
+            //state swap
             if(_currState == TurrState.Inactive)
             {
-                if(_ardConnected == true){ _currState = TurrState.Idle;}
+                if(_ardConnected == true){
+                    StateProcessing.RecalibrateCoordinates();
+                    _currState = TurrState.Idle;
+                }
                 else{_currState = TurrState.Inactive;}
             }
             else if(_currState == TurrState.Idle)
@@ -285,6 +289,7 @@ namespace Tracking
 
                 if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
                 else if (_remoteControl == true){_currState = TurrState.Remote;}
+                else if(_ardConnected == false){_currState = TurrState.Inactive;}
                 else{_currState = TurrState.Idle; }
             }
             else if(_currState == TurrState.Track)
@@ -293,6 +298,7 @@ namespace Tracking
                 if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == true){_currState = TurrState.Search;}
                 else if (_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}    
                 else if(_remoteControl == true){_currState = TurrState.Remote;}
+                else if(_ardConnected == false){_currState = TurrState.Inactive;}
                 else{_currState = TurrState.Track;}
             }
             else if(_currState == TurrState.Search)
@@ -303,14 +309,24 @@ namespace Tracking
                     if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == false){_currState = TurrState.Idle;}    
                 }
                 else if(_remoteControl == true){_currState = TurrState.Remote;}
+                else if(_ardConnected == false){_currState = TurrState.Inactive;}
                 
             }
             else if(_currState == TurrState.Remote)
             {
-                if(_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Track;}
+                if(_remoteControl == true){_currState = TurrState.Remote;}
+                else if(_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}
                 else if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                else if(_ardConnected == false){_currState = TurrState.Inactive;}
                 
             }
+
+            //stateevents
+
+
+            
+
+
         }
 
 
