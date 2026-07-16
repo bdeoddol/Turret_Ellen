@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Numerics.Tensors;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -32,7 +33,7 @@ namespace Tracking
 
         private bool _running;
         private bool _alive;
-        private Thread? _swapThread;
+        private Thread? _streamThread;
         private Thread? _captureThread;
 
 
@@ -56,8 +57,14 @@ namespace Tracking
         private string? _selectedPort;
 
 
-        TurrState _currState;
+        private volatile TurrState _currState;
+        private StateVar? _stateVariable;
+        private Thread? _stateThread;
+        
 
+
+
+        private bool _remoteControl;
 
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
@@ -74,7 +81,7 @@ namespace Tracking
             SetCameraButtonActive();
 
             _running = false;
-            _swapThread?.IsBackground = true;
+            _streamThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
 
@@ -99,6 +106,8 @@ namespace Tracking
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
             _ardConnected = false;
+
+            _stateVariable = new StateVar();
 
         }
 
@@ -137,7 +146,8 @@ namespace Tracking
         {
             _running = false;
             _alive = false;
-            if (_captureThread != null && _swapThread != null) { _captureThread?.Join(500); _swapThread?.Join(500); }
+            if (_captureThread != null) {_captureThread?.Join(500);}
+            if(_streamThread != null){_streamThread?.Join(500);}
         }
 
 
@@ -173,13 +183,7 @@ namespace Tracking
                     _processedFrame = _srcFrame;
 
                     if (_trackingMode == true) 
-                    { 
-                        trackInFrame();
-                        if(_ardConnected == true)
-                        {
-                            
-                        }
-                    }
+                    {_stateVariable?.ActiveTargets = trackInFrame();} //update the state variable
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
@@ -215,11 +219,13 @@ namespace Tracking
             frameCnt++;
         }
 
-        private void trackInFrame()
+        private ImmutableList<Detection> trackInFrame()
         {
+            ImmutableList<Detection>detections = ImmutableList.Create<Detection>();
+
             //capture the frame, process it within the InferenceSession, display the output
             ///////////////////////////preprocessing ////////////////////////////////
-            if (_processedFrame == null) { return; }
+            if (_processedFrame == null) { return detections;}
             OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
             int origWidth = _processedFrame.Width;
             int origHeight = _processedFrame.Height;
@@ -237,10 +243,9 @@ namespace Tracking
 
             if (_currModel != null)
             {
-
                 IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
                 ///////////////////////////Postprocessing ////////////////////////////////
-                ImmutableList<Detection> detections = Postprocessing.parseOutputData(sampleOutput);
+                detections = Postprocessing.parseOutputData(sampleOutput);
                 if (_trackingSession != null)
                 {
                     //prepare detections for BYTETrack
@@ -262,22 +267,51 @@ namespace Tracking
                     Preprocessing.performResize(_processedFrame, origWidth, origHeight);
                     resized = false;
                 }
-
-                //update the state variable TODO:
-
-
-
-
-
-
-
-
-
                 sampleOutput.Dispose();
             }
-            
+
+            return detections;
         }
 
+        private void stateMachine()
+        {
+            if(_currState == TurrState.Inactive)
+            {
+                if(_ardConnected == true){ _currState = TurrState.Idle;}
+                else{_currState = TurrState.Inactive;}
+            }
+            else if(_currState == TurrState.Idle)
+            {
+
+                if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                else if (_remoteControl == true){_currState = TurrState.Remote;}
+                else{_currState = TurrState.Idle; }
+            }
+            else if(_currState == TurrState.Track)
+            {
+
+                if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == true){_currState = TurrState.Search;}
+                else if (_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}    
+                else if(_remoteControl == true){_currState = TurrState.Remote;}
+                else{_currState = TurrState.Track;}
+            }
+            else if(_currState == TurrState.Search)
+            {
+                if (timerExceed4seconds)
+                {
+                    if(targetLostPlaceholder == true ){_currState = TurrState.Track;}
+                    if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == false){_currState = TurrState.Idle;}    
+                }
+                else if(_remoteControl == true){_currState = TurrState.Remote;}
+                
+            }
+            else if(_currState == TurrState.Remote)
+            {
+                if(_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Track;}
+                else if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                
+            }
+        }
 
 
         ///////////////////////////buttons///////////////////////////
@@ -345,10 +379,10 @@ namespace Tracking
                 return;
             }
             _captureThread = new Thread(new ThreadStart(grabFrame));
-            _swapThread = new Thread(new ThreadStart(Stream));
+            _streamThread = new Thread(new ThreadStart(Stream));
             _alive = true;
             _captureThread.Start();
-            _swapThread.Start();
+            _streamThread.Start();
             _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 16, 150, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
