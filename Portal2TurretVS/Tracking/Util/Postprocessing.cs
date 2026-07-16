@@ -17,7 +17,7 @@ public class Postprocessing
         IDisposableReadOnlyCollection<OrtValue> output = model.Run(runOptions, inputs, model.OutputNames);
         return output;
     }
-     public static ImmutableList<Detection> parseOutputData(IDisposableReadOnlyCollection<OrtValue> data)
+     public static List<Detection> parseOutputData(IDisposableReadOnlyCollection<OrtValue> data)
     {
         OrtValue data_0 = data[0];
         ReadOnlySpan<float> dataSpan = data_0.GetTensorDataAsSpan<float>();
@@ -34,38 +34,36 @@ public class Postprocessing
                     dataSpan[i+5]);
             List.Add(newDet);
         }
-        ImmutableList<Detection> retList = List.ToImmutableList<Detection>();
 
-        return retList;
+        return List;
     }
 
-    public static ImmutableList<Detection> filterByConfidence(ImmutableList<Detection> outputData, double cfdThreshold)
+    public static List<Detection> filterByConfidence(List<Detection> outputData, double cfdThreshold)
     {
         List<Detection> List = new List<Detection>();
         for(int i = 0; i < outputData.Count; i++)
         {
             if(outputData[i].conf >= cfdThreshold){List.Add(outputData[i]);}
         }
-        ImmutableList<Detection> retList = List.ToImmutableList();
-        return retList;
+        
+        return List;
     }
 
-    public static ImmutableList<Detection> filterByClass(ImmutableList<Detection> outputData, int classID)
+    public static List<Detection> filterByClass(List<Detection> outputData, int classID)
     {
         List<Detection> List = new List<Detection>();
         for(int i = 0; i < outputData.Count; i++)
         {
             if(outputData[i].classID == classID){List.Add(outputData[i]);}
         }
-        ImmutableList<Detection> retList = List.ToImmutableList();
-        return retList;
+        return List;
     }
 
-    public static void plotDetections(ImmutableList<Detection> output,  Mat frame)
+    public static void plotDetections(List<Detection> output,  Mat frame)
     {
 
-        ImmutableList<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
-        // ImmutableList<Detection> outputData = filterByClass(output, 0);
+        List<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
+        // List<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent, detID;
         for(int det = 0; det < outputData.Count; det++)
@@ -122,7 +120,7 @@ public class Postprocessing
         return retTrack;
     }
 
-    public static ImmutableList<Detection> ListSTrackToDet(List<STrack> track)
+    public static List<Detection> ListSTrackToDet(List<STrack> track)
     {
 
         List<Detection> mutDet = new List<Detection>();
@@ -136,9 +134,9 @@ public class Postprocessing
             Detection det = new Detection(BTRect.x(), BTRect.y(), BTRect.x() + BTRect.width(), BTRect.y() + BTRect.height(), score, (float)classID, trackID);
             mutDet.Add(det);
         }    
-        ImmutableList<Detection> detections = mutDet.ToImmutableList();
+        
                         
 
-        return detections;
+        return mutDet;
     }
 }

@@ -27,12 +27,13 @@ namespace Tracking
 
         private VideoCapture? _captures;
         private Mat? _srcFrame;
-        private Mat? _processedFrame;
+        private Mat _processedFrame = new();
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
 
         private bool _running;
         private bool _alive;
+        private bool UIFlag;
         private Thread? _streamThread;
         private Thread? _captureThread;
 
@@ -44,6 +45,8 @@ namespace Tracking
         private float[]? src;
         private long[]? shape;
         private bool resized = false;
+        private readonly List<Detection> _detections = new();
+        private readonly List<ByteTrackCSharp.Object> _BTObjs = new();
 
 
         private int frameCnt = 0;
@@ -85,6 +88,7 @@ namespace Tracking
             _captureThread?.IsBackground = true;
 
 
+            
             deactivateTrackMode();
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
@@ -105,9 +109,9 @@ namespace Tracking
             BaudDropDown.DataSource = _baudRates;
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
-            _ardConnected = false;
+            _ardConnected = false;      
 
-            _stateVariable = new StateVar();
+            _stateVariable = new StateVar();      
 
         }
 
@@ -150,6 +154,19 @@ namespace Tracking
             if(_streamThread != null){_streamThread?.Join(500);}
         }
 
+        // private void calibrateCamera() //upon connecting camera, call this and update camera settings
+        // {
+             
+        //      _stateVariable.cameraInit.imgFrameH = 
+        //      _stateVariable.cameraInit.imgFrameW = 
+        //     //  _stateVariable.cameraInit.HoriFOV = //insert horizontal FOV of camera here;
+        //     //  _stateVariable.cameraInit.VertFOV = //insert vertical FOV of camera here;
+
+        //     _stateVariable.cameraInit.update();
+
+
+        // }
+
 
 
 
@@ -158,7 +175,7 @@ namespace Tracking
         {
             while (_alive == true)
             {
-                Thread.Sleep(25);
+                Thread.Sleep(50);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
@@ -176,20 +193,19 @@ namespace Tracking
             totalRuntime.Start();
             while (_alive == true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(100);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
-                    _processedFrame = _srcFrame;
+                    _srcFrame.CopyTo(_processedFrame);
 
                     if (_trackingMode == true) 
-                    {_stateVariable?.ActiveTargets = trackInFrame();} //update the state variable
+                    {trackInFrame();} //update the state variable
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
                         //we delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
                         pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
-                        frameCnt++;
                     }
                 }
 
@@ -219,13 +235,14 @@ namespace Tracking
             frameCnt++;
         }
 
-        private ImmutableList<Detection> trackInFrame()
+        private void trackInFrame()
         {
-            ImmutableList<Detection>detections = ImmutableList.Create<Detection>();
 
+            _detections.Clear();
+            _BTObjs.Clear();
             //capture the frame, process it within the InferenceSession, display the output
             ///////////////////////////preprocessing ////////////////////////////////
-            if (_processedFrame == null) { return detections;}
+            if (_processedFrame == null) { return;}
             OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
             int origWidth = _processedFrame.Width;
             int origHeight = _processedFrame.Height;
@@ -243,23 +260,23 @@ namespace Tracking
 
             if (_currModel != null)
             {
-                IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
+                using IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
                 ///////////////////////////Postprocessing ////////////////////////////////
-                detections = Postprocessing.parseOutputData(sampleOutput);
+                _detections.AddRange(Postprocessing.parseOutputData(sampleOutput));
                 if (_trackingSession != null)
                 {
                     //prepare detections for BYTETrack
-                    List<ByteTrackCSharp.Object> BTObjs = new List<ByteTrackCSharp.Object>();
-                    foreach (Detection val in detections)
-                    { BTObjs.Add(Postprocessing.DetToByteTrackObject(val)); }
+                    foreach (Detection val in _detections)
+                    { _BTObjs.Add(Postprocessing.DetToByteTrackObject(val)); }
 
                     //update BYTETrack and get new tracking results
-                    List<STrack> outputTracks = _trackingSession.update(BTObjs);
-                    detections = Postprocessing.ListSTrackToDet(outputTracks);
+                    List<STrack> outputTracks = _trackingSession.update(_BTObjs);
+                    _detections.Clear();
+                    _detections.AddRange(Postprocessing.ListSTrackToDet(outputTracks));
                 }
 
                 //draw our detections and resize image back to original size if necessary
-                Postprocessing.plotDetections(detections, _processedFrame);
+                Postprocessing.plotDetections(_detections, _processedFrame);
                 if (resized == true)
                 {
                     //resize image back to original framesize to fit pictureBox
@@ -267,10 +284,9 @@ namespace Tracking
                     Preprocessing.performResize(_processedFrame, origWidth, origHeight);
                     resized = false;
                 }
-                sampleOutput.Dispose();
             }
 
-            return detections;
+            return;
         }
 
         // private void stateMachine()
@@ -393,12 +409,17 @@ namespace Tracking
                 MessageBox.Show("Could not connect to camera. Please connect a camera and try again.");
                 return;
             }
+
+
+
+
+
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
             _alive = true;
             _captureThread.Start();
             _streamThread.Start();
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 16, 150, (float)0.5, (float)0.5, (float)0.6);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 10, 100, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
             return;
