@@ -33,7 +33,7 @@ namespace Tracking
 
         private bool _running;
         private bool _alive;
-        private bool UIFlag;
+        private  int UIFlag;
         private Thread? _streamThread;
         private Thread? _captureThread;
 
@@ -419,7 +419,7 @@ namespace Tracking
             _alive = true;
             _captureThread.Start();
             _streamThread.Start();
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 10, 100, (float)0.5, (float)0.5, (float)0.6);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 8, 80, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
             return;

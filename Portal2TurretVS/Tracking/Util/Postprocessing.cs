@@ -7,19 +7,19 @@ public class Postprocessing
 {
     public static IDisposableReadOnlyCollection<OrtValue> infer(float[] src, long[] shape, InferenceSession model)
     {
-        OrtValue inputOrtValue = OrtValue.CreateTensorValueFromMemory(src, shape);
-        RunOptions runOptions = new RunOptions();
+        using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(src, shape); //OrtValue
+        using var runOptions = new RunOptions(); //RunOptions
             
         var inputs = new Dictionary<string, OrtValue> {
             { "images",  inputOrtValue }
         };
 
-        IDisposableReadOnlyCollection<OrtValue> output = model.Run(runOptions, inputs, model.OutputNames);
+        IDisposableReadOnlyCollection<OrtValue>  output = model.Run(runOptions, inputs, model.OutputNames);
         return output;
     }
      public static List<Detection> parseOutputData(IDisposableReadOnlyCollection<OrtValue> data)
     {
-        OrtValue data_0 = data[0];
+        using var data_0 = data[0]; //OrtValue
         ReadOnlySpan<float> dataSpan = data_0.GetTensorDataAsSpan<float>();
         
         List<Detection> List = new List<Detection>();
@@ -38,7 +38,7 @@ public class Postprocessing
         return List;
     }
 
-    public static List<Detection> filterByConfidence(List<Detection> outputData, double cfdThreshold)
+    private static List<Detection> filterByConfidence(List<Detection> outputData, double cfdThreshold)
     {
         List<Detection> List = new List<Detection>();
         for(int i = 0; i < outputData.Count; i++)
@@ -48,8 +48,7 @@ public class Postprocessing
         
         return List;
     }
-
-    public static List<Detection> filterByClass(List<Detection> outputData, int classID)
+    private static List<Detection> filterByClass(List<Detection> outputData, int classID)
     {
         List<Detection> List = new List<Detection>();
         for(int i = 0; i < outputData.Count; i++)
@@ -59,25 +58,43 @@ public class Postprocessing
         return List;
     }
 
+    private static void filterByClassOPT(ref List<Detection> outputData, int classID)
+    {
+        for(int i = 0; i < outputData.Count; i++)
+        {
+            if(outputData[i].classID != classID){outputData.RemoveAt(i);}
+        }
+    }
+    private static void filterByConfidenceOPT(ref List<Detection> outputData, double cfdThreshold)
+    {
+        for(int i = 0; i < outputData.Count; i++)
+        {
+            if(outputData[i].conf < cfdThreshold){outputData.RemoveAt(i);}
+        }
+    }
+
     public static void plotDetections(List<Detection> output,  Mat frame)
     {
 
-        List<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
+        // List<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
+        filterByClassOPT(ref output, 0);
+        //filterByConfidenceOPT(ref output, 0.5);
+
         // List<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls, width, height;
         int ConfAsPercent, detID;
-        for(int det = 0; det < outputData.Count; det++)
+        for(int det = 0; det < output.Count; det++)
         {
-            if(det >= outputData.Count){break;}
+            if(det >= output.Count){break;}
             //prepare data for each detection 
-            x1 = outputData[det].x1;
-            y1 = outputData[det].y1;
-            x2 = outputData[det].x2;
-            y2 = outputData[det].y2;
-            cfd = outputData[det].conf;
-            cls = outputData[det].classID;
+            x1 = output[det].x1;
+            y1 = output[det].y1;
+            x2 = output[det].x2;
+            y2 = output[det].y2;
+            cfd = output[det].conf;
+            cls = output[det].classID;
             ConfAsPercent = (int)(cfd*100);
-            detID = outputData[det].detID;
+            detID = output[det].detID;
             
             width = x2-x1;
             height = y2-y1;
