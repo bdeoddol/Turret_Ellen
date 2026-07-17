@@ -25,8 +25,8 @@ namespace Tracking
     public partial class Form1 : Form
     {
 
-        private VideoCapture? _captures;
-        private Mat? _srcFrame;
+        private VideoCapture _captures = new();
+        private Mat _srcFrame = new();
         private Mat _processedFrame = new();
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
@@ -120,13 +120,12 @@ namespace Tracking
             //once form is closed, release other resources
             if (_captures != null)
             {
-                _captures?.Release();
-                _captures?.Dispose();
+                _captures.Release();
+                _captures.Dispose();
             }
             if (_srcFrame != null)
             {
-                _srcFrame?.Dispose();
-                _srcFrame = null;
+                _srcFrame.Dispose();
             }
             if (_currModel != null)
             {
@@ -179,7 +178,7 @@ namespace Tracking
                 if (_running == true)
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
-                    _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _frame
+                    _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _srcframe
 
                 }
 
@@ -410,9 +409,7 @@ namespace Tracking
                 return;
             }
 
-
-
-
+            // _captures?.Read(_srcFrame);
 
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
@@ -429,12 +426,10 @@ namespace Tracking
         {
             KillThreads();
 
-            _captures?.Release();
-            _captures?.Dispose();
-            _captures = null;
-            _srcFrame?.Release();
-            _srcFrame?.Dispose();
-            _srcFrame = null;
+            _captures.Release();
+            _captures.Dispose();
+            _srcFrame.Release();
+            _srcFrame.Dispose();
 
             pictureBox1.Hide();
             SetCameraButtonActive();
