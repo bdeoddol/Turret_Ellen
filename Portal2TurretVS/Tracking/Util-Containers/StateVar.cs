@@ -11,6 +11,8 @@ public class StateVar
         trackCycle = new Queue<int>(); 
         timer = new Stopwatch();
         cameraCalibration = new CameraCalib();
+        centered = false;
+        targetLost = false;
         
     }
     
@@ -27,6 +29,9 @@ public class StateVar
     public Stopwatch timer {get;set;} //utility
 
     public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations
+
+    public bool centered{get;set;}
+    public bool targetLost{get;set;}
 
     
 

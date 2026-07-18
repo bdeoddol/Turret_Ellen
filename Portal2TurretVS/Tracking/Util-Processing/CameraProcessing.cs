@@ -8,11 +8,11 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
         return retCommand;
     }
 
-    public static SerialCommand CalculateSerialData(OpenCvSharp.Point imgCenter, OpenCvSharp.Point boxCenter, ref CameraCalib calibrations)
+    public static SerialCommand calcBoxTravel(CameraCalib calibrations, OpenCvSharp.Point boxCenter)
     {
         //calculate the pixel differences
-        int horiPDelta = boxCenter.X - imgCenter.X;
-        int vertPDelta = imgCenter.Y - boxCenter.Y;
+        int horiPDelta = boxCenter.X - calibrations._imgCenter.X;
+        int vertPDelta = calibrations._imgCenter.Y - boxCenter.Y;
 
         //given 5 pixel rise, given 15 pixels per degree, 
         int tiltDegrees = horiPDelta/calibrations.HoriPixelPerDegree;

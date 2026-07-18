@@ -9,6 +9,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Net;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -65,12 +66,12 @@ namespace Tracking
         private string? _selectedPort;
 
         //State Machine Variables
-        // private volatile TurrState _currState;
-        private StateVar? _stateVariable;
-        // private Thread? _stateThread;
+        private volatile TurrState _currState;
+        private StateVar _stateVariable = new();
+        private Thread? _stateThread;
         
         //Remote Control Variables
-        // private bool _remoteControl;
+        private bool _remoteControl;
 
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
@@ -113,8 +114,7 @@ namespace Tracking
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
             _ardConnected = false;      
-
-            _stateVariable = new StateVar();      
+    
 
         }
 
@@ -313,60 +313,88 @@ namespace Tracking
             return;
         }
 
-        // private void stateMachine()
-        // {
-        //     //state swap
-        //     if(_currState == TurrState.Inactive)
-        //     {
-        //         if(_ardConnected == true){
-        //             _currState = TurrState.Idle;
-        //         }
-        //         else{_currState = TurrState.Inactive;}
-        //     }
-        //     else if(_currState == TurrState.Idle)
-        //     {
+        private void stateMachine()
+        {
+            SerialCommand serialData;
+            Detection currDet;
+            int currDetID;
+            while (true)
+            {
+                 //state swap
+                if(_currState == TurrState.Inactive)
+                {
+                    if(_ardConnected == true){_currState = TurrState.Idle;}
+                    else{_currState = TurrState.Inactive;}
+                }
+                else if(_currState == TurrState.Idle)
+                {
+                    if(_ardConnected == false){_currState = TurrState.Inactive;}
+                    else if (_remoteControl == true){_currState = TurrState.Remote;}
+                    else if(_stateVariable.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                    else{_currState = TurrState.Idle; }
+                }
+                else if(_currState == TurrState.Track)
+                {   
+                    if(_ardConnected == false){_currState = TurrState.Inactive;}
+                    else if(_remoteControl == true){_currState = TurrState.Remote;}
+                    else if(_stateVariable.ActiveTargets.IsEmpty == false && _stateVariable.targetLost == true){_currState = TurrState.Search;}
+                    else if (_stateVariable.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}    
+                    else{_currState = TurrState.Track;}
+                }
+                else if(_currState == TurrState.Search)
+                {
+                    if(_ardConnected == false){_currState = TurrState.Inactive;}
+                    else if(_remoteControl == true){_currState = TurrState.Remote;}
+                    if (timerExceed4seconds)
+                    {
+                        if(targetLostPlaceholder == true ){_currState = TurrState.Track;}
+                        else if(_stateVariable.ActiveTargets.IsEmpty == false || _stateVariable.targetLost == false){_currState = TurrState.Idle;}    
+                    }
+                    else if(_remoteControl == true){_currState = TurrState.Remote;}
+                    else if(_ardConnected == false){_currState = TurrState.Inactive;}
+                    
+                }
+                else if(_currState == TurrState.Remote)
+                {   
+                    if(_ardConnected == false){_currState = TurrState.Inactive;}
+                    else if(_remoteControl == true){_currState = TurrState.Remote;}
+                    else if(_stateVariable.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}
+                    else if(_stateVariable.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                    
+                    
+                }
 
-        //         if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
-        //         else if (_remoteControl == true){_currState = TurrState.Remote;}
-        //         else if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //         else{_currState = TurrState.Idle; }
-        //     }
-        //     else if(_currState == TurrState.Track)
-        //     {
+                ///////////////////stateevents//////////////////////
+                if(_currState == TurrState.Inactive == false)
+                {
+                    
+                }
+                else if(_currState == TurrState.Idle)
+                {
+                    if(_stateVariable.centered == false)
+                    {
+                        serialData = CameraProcessing.Center();
+                        _stateVariable.centered = true;
+                    }
+                    
+                }
+                else if(_currState == TurrState.Track)
+                {   
+                }
+                else if(_currState == TurrState.Search)
+                {
+                    
+                }
+                else if(_currState == TurrState.Remote)
+                {
+                    
+                }
 
-        //         if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == true){_currState = TurrState.Search;}
-        //         else if (_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}    
-        //         else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //         else if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //         else{_currState = TurrState.Track;}
-        //     }
-        //     else if(_currState == TurrState.Search)
-        //     {
-        //         if (timerExceed4seconds)
-        //         {
-        //             if(targetLostPlaceholder == true ){_currState = TurrState.Track;}
-        //             if(_stateVariable?.ActiveTargets.IsEmpty == false && targetLostPlaceholder == false){_currState = TurrState.Idle;}    
-        //         }
-        //         else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //         else if(_ardConnected == false){_currState = TurrState.Inactive;}
                 
-        //     }
-        //     else if(_currState == TurrState.Remote)
-        //     {
-        //         if(_remoteControl == true){_currState = TurrState.Remote;}
-        //         else if(_stateVariable?.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}
-        //         else if(_stateVariable?.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
-        //         else if(_ardConnected == false){_currState = TurrState.Inactive;}
-                
-        //     }
+            }
+           
 
-        //     //stateevents
-
-
-            
-
-
-        // }
+        }
 
 
 
