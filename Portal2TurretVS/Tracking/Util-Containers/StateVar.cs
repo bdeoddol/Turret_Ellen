@@ -8,7 +8,7 @@ public class StateVar
     public StateVar()
     {
         ActiveTargets = ImmutableList.Create<Detection>();
-        trackCycle = new Queue<int>(); 
+        trackCycle = new List<int>(); 
         timer = new Stopwatch();
         cameraCalibration = new CameraCalib();
         centered = false;
@@ -19,7 +19,7 @@ public class StateVar
     public ImmutableList<Detection> ActiveTargets {get; set;}
     //always keep this updated with every frame
 
-    public  Queue<int> trackCycle{get;set;}
+    public  List<int> trackCycle{get;set;}
     //the order in which our detections will be tracked
     //Rule: Track the next highest confidence detection
     //update this track cycle if: 
