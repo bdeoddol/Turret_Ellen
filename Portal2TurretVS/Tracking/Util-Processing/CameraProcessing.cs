@@ -1,0 +1,26 @@
+using OpenCvSharp.Flann;
+
+public class CameraProcessing //class holding all pixel coordinate to degrees of motion calculations
+{
+    public static SerialCommand Center()
+    {
+        SerialCommand retCommand = new SerialCommand(90,90);
+        return retCommand;
+    }
+
+    public static SerialCommand CalculateSerialData(OpenCvSharp.Point imgCenter, OpenCvSharp.Point boxCenter, ref CameraCalib calibrations)
+    {
+        //calculate the pixel differences
+        int horiPDelta = boxCenter.X - imgCenter.X;
+        int vertPDelta = imgCenter.Y - boxCenter.Y;
+
+        //given 5 pixel rise, given 15 pixels per degree, 
+        int tiltDegrees = horiPDelta/calibrations.HoriPixelPerDegree;
+        int panDegrees = vertPDelta/calibrations.VertPixelPerDegree;
+        SerialCommand retCommand = new SerialCommand(panDegrees, tiltDegrees);
+
+        return retCommand;
+    }
+
+
+}

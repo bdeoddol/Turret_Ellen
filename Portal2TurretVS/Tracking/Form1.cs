@@ -24,20 +24,21 @@ namespace Tracking
 {
     public partial class Form1 : Form
     {
-
-        private VideoCapture _captures = new();
-        private Mat _srcFrame = new();
+        //imgframe storage
+        private VideoCapture? _captures;
+        private Mat? _srcFrame;
         private Mat _processedFrame = new();
         private Bitmap? _displayFrame;
         private Bitmap? _oldFrame;
 
+        //thread variables
         private bool _running;
         private bool _alive;
-        private  int UIFlag;
+        // private  int UIFlag;
         private Thread? _streamThread;
         private Thread? _captureThread;
 
-
+        //inferencing variables
         private bool _trackingMode;
         private BYTETracker? _trackingSession;
         private InferenceSession? _currModel;
@@ -48,26 +49,28 @@ namespace Tracking
         private readonly List<Detection> _detections = new();
         private readonly List<ByteTrackCSharp.Object> _BTObjs = new();
 
+        //FPS variables
+        private bool _fpsEnable = true;
+        private Stopwatch _totalRuntime = new Stopwatch();
+        private int _frameCnt = 0;
+        private double _elapsedSeconds;
+        private double _fpsVal => _frameCnt/_elapsedSeconds;
+        string? _fpsDisplay;
 
-        private int frameCnt = 0;
-        private Stopwatch totalRuntime = new Stopwatch();
-        string? fpsDisplay;
-
+        //Serial Port Variables
         private bool _ardConnected;
         private SerialPort? _serialPort;
         private int[] _baudRates = { 9600, 19200, 38400, 57600, 115200 };
         private int _selectedBaud;
         private string? _selectedPort;
 
-
-        private volatile TurrState _currState;
+        //State Machine Variables
+        // private volatile TurrState _currState;
         private StateVar? _stateVariable;
-        private Thread? _stateThread;
+        // private Thread? _stateThread;
         
-
-
-
-        private bool _remoteControl;
+        //Remote Control Variables
+        // private bool _remoteControl;
 
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
@@ -153,23 +156,31 @@ namespace Tracking
             if(_streamThread != null){_streamThread?.Join(500);}
         }
 
-        // private void calibrateCamera() //upon connecting camera, call this and update camera settings
-        // {
-             
-        //      _stateVariable.cameraInit.imgFrameH = 
-        //      _stateVariable.cameraInit.imgFrameW = 
-        //     //  _stateVariable.cameraInit.HoriFOV = //insert horizontal FOV of camera here;
-        //     //  _stateVariable.cameraInit.VertFOV = //insert vertical FOV of camera here;
+        //function to be called upon every camera connection
+        private bool calibrateCamera() 
+        {
+            if(_captures == null || _srcFrame == null) {return false;}
+            _captures.Set(VideoCaptureProperties.FrameWidth, 960);
+            _captures.Set(VideoCaptureProperties.FrameHeight, 540);
+            _captures.Read(_srcFrame);
+            Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
-        //     _stateVariable.cameraInit.update();
+            if(_stateVariable == null || _stateVariable.cameraCalibration == null){return false;}
+            _stateVariable.cameraCalibration.imgFrameH = _srcFrame.Height;
+            _stateVariable.cameraCalibration.imgFrameW = _srcFrame.Width;
+            _stateVariable.cameraCalibration.VertFOV = 33.836;
+            _stateVariable.cameraCalibration.HoriFOV = 56.068;
 
 
-        // }
+            return true;
+        }
 
 
 
 
     ///////////////////////////Threads///////////////////////////
+    /// 
+    //Continutally captures and overwrites the frames from the webcam feed into a placeholder var called srcFrame
         private void grabFrame()
         {
             while (_alive == true)
@@ -179,6 +190,7 @@ namespace Tracking
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _srcframe
+                    
 
                 }
 
@@ -187,9 +199,16 @@ namespace Tracking
         }
 
 
+    //The main streaming thread that calls the swap frame func. 
+    // Grabs the latest captured frame overwritten into _srcframe and stores it into a var  called _processedframe
+    //swaps the newly grabbed frame with the frame displayed in pictureBox1 
+    //If allowed by _trackingMode, processedFrame may be modified and processed through inferencing before being swapped
+    //  Also pastes the FPS counter onto the img before displaying it in picturebox1 if desired
+
         private void Stream()
         {
-            totalRuntime.Start();
+            _totalRuntime.Start();
+            _frameCnt = 0;
             while (_alive == true)
             {
                 Thread.Sleep(100);
@@ -202,6 +221,17 @@ namespace Tracking
                     {trackInFrame();} //update the state variable
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
+                        if(_fpsEnable == true)
+                        {
+                            _elapsedSeconds = _totalRuntime.Elapsed.TotalSeconds;
+                            if (_elapsedSeconds > 0)
+                            {
+                                // double fpsVal = _frameCnt / _elapsedSeconds;
+                                _fpsDisplay = $"FPS: {_fpsVal:F1}";
+                                Cv2.PutText(_processedFrame, _fpsDisplay, new OpenCvSharp.Point(10, 25), HersheyFonts.HersheySimplex, 1, Scalar.White, 2);
+                                
+                            }
+                        }
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
                         //we delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
                         pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
@@ -212,28 +242,23 @@ namespace Tracking
             return;
         }
 
+        // the primary function that performs the swap.
         private void swapFrames()
         {
 
             if (!_alive || _processedFrame == null || _processedFrame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
-
-            double elapsedSeconds = totalRuntime.Elapsed.TotalSeconds;
-            if (elapsedSeconds > 0)
-            {
-                double fpsVal = frameCnt / elapsedSeconds;
-                fpsDisplay = $"FPS: {fpsVal:F1}";
-                Cv2.PutText(_processedFrame, fpsDisplay, new OpenCvSharp.Point(10, 25), HersheyFonts.HersheySimplex, 0.5, Scalar.White);
-
-            }
-
             _displayFrame = BitmapConverter.ToBitmap(_processedFrame);
             pictureBox1.Image = _displayFrame;
             _oldFrame?.Dispose();
-            frameCnt++;
+            _frameCnt++;
+            return;
         }
 
+        //primary inferencing function
+        //Takes the newly grabbed frame called _processedFrame performs preprocessing, inferencing, and postprocessing.
+        //Draws the plotted detections onto the frame and prepares it to be ready and displayed witin Picturebox1
         private void trackInFrame()
         {
 
@@ -344,8 +369,8 @@ namespace Tracking
         // }
 
 
-        ///////////////////////////buttons///////////////////////////
 
+        ///////////////////////////buttons///////////////////////////
         private void PortDropDown_SelectedIndexChanged(object sender, EventArgs e)
         {
             _selectedPort = PortDropDown.SelectedText;
@@ -401,6 +426,7 @@ namespace Tracking
 
         private void ConnectCamera_Click(object sender, EventArgs e)
         {
+            //initialize new resources
             _captures = new VideoCapture(0);
             _srcFrame = new Mat();
             if (_captures.IsOpened() == false)
@@ -409,14 +435,16 @@ namespace Tracking
                 return;
             }
 
-            // _captures?.Read(_srcFrame);
+            //calibrate our camera upon every new camera connect
+            calibrateCamera();
+
 
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, (int)_fpsVal, (int)(_fpsVal*10), (float)0.5, (float)0.5, (float)0.6);
             _alive = true;
             _captureThread.Start();
             _streamThread.Start();
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 8, 80, (float)0.5, (float)0.5, (float)0.6);
 
             SetDisconnectButtonActive();
             return;
@@ -426,10 +454,13 @@ namespace Tracking
         {
             KillThreads();
 
-            _captures.Release();
-            _captures.Dispose();
-            _srcFrame.Release();
-            _srcFrame.Dispose();
+            _captures?.Release();
+            _captures?.Dispose();
+            _captures = null;
+            _srcFrame?.Release();
+            _srcFrame?.Dispose();
+            _srcFrame = null;
+        
 
             pictureBox1.Hide();
             SetCameraButtonActive();

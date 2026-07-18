@@ -11,5 +11,7 @@ public class Detection(float x1a, float y1a, float x2a, float y2a, float confa, 
         public float conf{get; set;} = confa;
         public float classID{get; set;} = classIDa;
         public int detID{get; set;} = detIDa; //track IDs set to -1 by default, assigned by BYTETRACK
-
+        public int width => (int)(x2-x1);
+        public int height => (int)(y2-y1);
+        public OpenCvSharp.Point boxCenter => new OpenCvSharp.Point((x1+x2)/2, (y1+y2)/2);
 }

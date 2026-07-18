@@ -7,9 +7,10 @@ class Program
         //change program name/ filepath accordingly
         // PreprocessingTest.Run("../testImgs/imrs-sampleWebcam.jpg");
         // ImgResizev1.Run("../testImgs/magazine.jpg");
-        // PerformInferencing.Run("../TestAssets/yolo26n.onnx", "../testImgs/sampleWebcam.jpg");
+        PerformInferencing.Run("../TestAssets/yolo26n.onnx", "../testImgs/sampleWebcam.jpg");
         // ModelInfo.Run("../TestAssets/yolo26m.onnx");
-        OpenPort.Run();
+        // OpenPort.Run();
+        // Capture.Run();
         
 
         return 0;

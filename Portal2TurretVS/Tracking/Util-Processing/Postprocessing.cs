@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using ByteTrackCSharp;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
+using OpenCvSharp.Flann;
 
 public class Postprocessing
 {
@@ -81,8 +82,10 @@ public class Postprocessing
         //filterByConfidenceOPT(ref output, 0.5);
 
         // List<Detection> outputData = filterByClass(output, 0);
-        float x1, y1, x2, y2, cfd, cls, width, height;
+        float x1, y1, x2, y2, cfd, cls;
+        int width, height;
         int ConfAsPercent, detID;
+        OpenCvSharp.Point center;
         for(int det = 0; det < output.Count; det++)
         {
             if(det >= output.Count){break;}
@@ -96,18 +99,20 @@ public class Postprocessing
             ConfAsPercent = (int)(cfd*100);
             detID = output[det].detID;
             
-            width = x2-x1;
-            height = y2-y1;
+            width = output[det].width;
+            height = output[det].height;
+            center = output[det].boxCenter;
+            
 
             //plot our detection
-            plotSingularHelper((int)x1,(int)y1,(int)width,(int)height,ConfAsPercent, detID, frame);
+            plotSingularHelper((int)x1,(int)y1,width, height, center, ConfAsPercent, detID, frame);
         }
         
         
         return;
     }
 
-    private static void plotSingularHelper(int x1, int y1, int width, int height, int ConfPercent, int detID, Mat frame)
+    private static void plotSingularHelper(int x1, int y1, int width, int height, OpenCvSharp.Point center, int ConfPercent, int detID, Mat frame)
     {
         OpenCvSharp.Rect boundingBox = new OpenCvSharp.Rect(x1, y1, width, height); //construct our bounding box
         Scalar color = new Scalar(4, 28, 255); //construct w/ bgr values for bright red
@@ -115,6 +120,7 @@ public class Postprocessing
 
         //draw our boxes
         Cv2.Rectangle(frame, boundingBox, color, 2, LineTypes.Link8, 0);
+        Cv2.Circle(frame, center, 2, color, 2);
         Cv2.PutText(frame, "Person " + detID +  ": "  + ConfPercent + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
 
         return;
