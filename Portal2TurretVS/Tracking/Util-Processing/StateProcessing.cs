@@ -1,3 +1,5 @@
+using System.Reflection;
+
 public class StateProcessing
 {
     public static List<int> RebuildTrackCycle(List<Detection> activeTargets)
@@ -17,5 +19,11 @@ public class StateProcessing
         }
         
         return retList;
+    }
+
+    public static bool TryNextID(ref StateVar statevariable)
+    {
+        
+        
     }
 }
