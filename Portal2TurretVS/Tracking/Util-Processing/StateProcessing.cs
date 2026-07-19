@@ -21,9 +21,38 @@ public class StateProcessing
         return retList;
     }
 
-    public static bool TryNextID(ref StateVar statevariable)
-    {
-        
-        
-    }
+    // public static bool FindNextValidID(ref StateVar statevariable)
+    // {
+    //     // if (statevariable.trackCycle == null || statevariable.trackCycle.Count == 0)
+    //     // {
+    //     //     statevariable.trackCycle = RebuildTrackCycle(statevariable.ActiveTargets.ToList());
+    //     //     return false;   
+    //     // }
+    //     // int startIdx = statevariable.cycleCurrIdx;
+    //     // int count = statevariable.trackCycle.Count;
+
+    //     // for (int i = 0; i < count; i++)
+    //     // {
+    //     //     statevariable.cycleCurrIdx = (startIdx + i) % count;
+    //     //     int id = statevariable.currDetId;
+
+    //     //     var det = statevariable.ActiveTargets.Find(x => x.detID == id);
+    //     //     if (det != null)
+    //     //     {
+    //     //         statevariable.currDet = det;
+    //     //         return true;
+    //     //     }
+    //     // }
+
+    //     // // no valid active IDs found
+    //     // statevariable.trackCycle = RebuildTrackCycle(statevariable.ActiveTargets.ToList());
+    //     // return false;
+
+
+
+    // }
+
+
+    
 }
+

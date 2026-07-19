@@ -13,6 +13,8 @@ public class StateVar
         cameraCalibration = new CameraCalib();
         centered = false;
         targetLost = false;
+        cycleCurrIdx = 0;
+        currDet = null;
         
     }
     
@@ -32,6 +34,9 @@ public class StateVar
 
     public bool centered{get;set;}
     public bool targetLost{get;set;}
+    public Detection? currDet;
+    public int cycleCurrIdx;
+    public int currDetId => trackCycle[cycleCurrIdx];
 
     
 
