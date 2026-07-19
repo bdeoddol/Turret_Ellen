@@ -9,16 +9,26 @@ class OpenPort
 
         String[] names = SerialPort.GetPortNames();
         SerialPort _serialPort = new SerialPort();
+        String portName = "hi";
 
         foreach(string val in names)
         {
             Console.WriteLine(val);
+            portName = val;
         }
-        String portName = "hi";
-        _serialPort = new SerialPort(portName);
-        _serialPort.BaudRate = 9600;
+        try
+        {
+            _serialPort = new SerialPort(portName);
+            // _serialPort.BaudRate = 9600;
 
-        _serialPort.Open();
+            _serialPort.Open();
+            Console.WriteLine("i'm working");
+        }
+        catch
+        {
+            Console.WriteLine("nope");
+        }
+
         // _serialPort.WriteLine("hi testing");
         _serialPort.Close();
         

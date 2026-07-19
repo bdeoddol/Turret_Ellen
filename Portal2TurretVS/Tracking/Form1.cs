@@ -413,19 +413,15 @@ namespace Tracking
 
         private void SerialPortConnect()
         {
-            if(_ardConnected == true)
-            {
-                return;
-            }
+            if(_ardConnected == true){return;}
             _selectedPort = PortDropDown.SelectedItem?.ToString();
             if (BaudDropDown.SelectedItem is int){_selectedBaud = (int)BaudDropDown.SelectedItem;}
             try {             
                 _serialPort = new SerialPort(_selectedPort);
                 _serialPort.BaudRate = _selectedBaud;
                 _serialPort.Open();
-                }
-            catch
-            {
+            }
+            catch{
                 MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
                 _ardConnected = false;
                 return;
