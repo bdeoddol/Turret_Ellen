@@ -55,7 +55,7 @@ namespace Tracking
         private Stopwatch _totalRuntime = new Stopwatch();
         private int _frameCnt = 0;
         private double _elapsedSeconds;
-        private double _fpsVal => _frameCnt/_elapsedSeconds;
+        private double _fpsVal => _frameCnt / _elapsedSeconds;
         string? _fpsDisplay;
 
         //Serial Port Variables
@@ -93,7 +93,7 @@ namespace Tracking
             _captureThread?.IsBackground = true;
 
 
-            
+
             deactivateTrackMode();
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
@@ -114,7 +114,8 @@ namespace Tracking
             BaudDropDown.DataSource = _baudRates;
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
-            _ardConnected = false;      
+            _ardConnected = false;
+            ArduinoButtonDeactivated();
     
             _stateThread = new Thread(new ThreadStart(stateMachine));
             _stateOperate = true;
@@ -137,7 +138,7 @@ namespace Tracking
             {
                 _currModel.Dispose();
             }
-            if (_serialPort != null)
+            if (_serialPort != null && _ardConnected == true)
             {
                 _serialPort.Close();
                 _serialPort.Dispose();
@@ -162,15 +163,15 @@ namespace Tracking
         }
 
         //function to be called upon every camera connection
-        private bool calibrateCamera() 
+        private bool calibrateCamera()
         {
-            if(_captures == null || _srcFrame == null) {return false;}
+            if (_captures == null || _srcFrame == null) { return false; }
             _captures.Set(VideoCaptureProperties.FrameWidth, 960);
             _captures.Set(VideoCaptureProperties.FrameHeight, 540);
             _captures.Read(_srcFrame);
             Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
-            if(_stateVar == null || _stateVar.cameraCalibration == null){return false;}
+            if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
             _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
             _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
             _stateVar.cameraCalibration.VertFOV = 33.836;
@@ -183,9 +184,9 @@ namespace Tracking
 
 
 
-    ///////////////////////////Threads///////////////////////////
-    /// 
-    //Continutally captures and overwrites the frames from the webcam feed into a placeholder var called srcFrame
+        ///////////////////////////Threads///////////////////////////
+        /// 
+        //Continutally captures and overwrites the frames from the webcam feed into a placeholder var called srcFrame
         private void grabFrame()
         {
             while (_alive == true)
@@ -195,7 +196,7 @@ namespace Tracking
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _srcframe
-                    
+
 
                 }
 
@@ -204,11 +205,11 @@ namespace Tracking
         }
 
 
-    //The main streaming thread that calls the swap frame func. 
-    // Grabs the latest captured frame overwritten into _srcframe and stores it into a var  called _processedframe
-    //swaps the newly grabbed frame with the frame displayed in pictureBox1 
-    //If allowed by _trackingMode, processedFrame may be modified and processed through inferencing before being swapped
-    //  Also pastes the FPS counter onto the img before displaying it in picturebox1 if desired
+        //The main streaming thread that calls the swap frame func. 
+        // Grabs the latest captured frame overwritten into _srcframe and stores it into a var  called _processedframe
+        //swaps the newly grabbed frame with the frame displayed in pictureBox1 
+        //If allowed by _trackingMode, processedFrame may be modified and processed through inferencing before being swapped
+        //  Also pastes the FPS counter onto the img before displaying it in picturebox1 if desired
 
         private void Stream()
         {
@@ -222,11 +223,11 @@ namespace Tracking
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _srcFrame.CopyTo(_processedFrame);
 
-                    if (_trackingMode == true) 
-                    {trackInFrame();} //update the state variable
+                    if (_trackingMode == true)
+                    { trackInFrame(); } //update the state variable
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
-                        if(_fpsEnable == true)
+                        if (_fpsEnable == true)
                         {
                             _elapsedSeconds = _totalRuntime.Elapsed.TotalSeconds;
                             if (_elapsedSeconds > 0)
@@ -234,7 +235,7 @@ namespace Tracking
                                 // double fpsVal = _frameCnt / _elapsedSeconds;
                                 _fpsDisplay = $"FPS: {_fpsVal:F1}";
                                 Cv2.PutText(_processedFrame, _fpsDisplay, new OpenCvSharp.Point(10, 25), HersheyFonts.HersheySimplex, 1, Scalar.White, 2);
-                                
+
                             }
                         }
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
@@ -271,7 +272,7 @@ namespace Tracking
             _BTObjs.Clear();
             //capture the frame, process it within the InferenceSession, display the output
             ///////////////////////////preprocessing ////////////////////////////////
-            if (_processedFrame == null) { return;}
+            if (_processedFrame == null) { return; }
             OpenCvSharp.Rect ROICrop = Preprocessing.GetRectOfOriginalFrame(_processedFrame);
             int origWidth = _processedFrame.Width;
             int origHeight = _processedFrame.Height;
@@ -391,142 +392,7 @@ namespace Tracking
             }
         }
 
-        ///////////////////////////buttons///////////////////////////
-        private void PortDropDown_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            _selectedPort = PortDropDown.SelectedText;
-        }
+     
 
-        private void PortRefresh_Click(object sender, EventArgs e)
-        {
-            PortDropDown.DataSource = null;
-            PortDropDown.DataSource = SerialPort.GetPortNames();
-        }
-
-        private void BaudDropDown_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (BaudDropDown.SelectedItem != null){ _selectedBaud = (int)BaudDropDown.SelectedItem; }
-        }
-
-        private void ConnectArduino_Click(object sender, EventArgs e) //TODO: WORK ON CONNECT AND DISCONNECT SUPPORT
-        { SerialPortConnect();}
-
-        private void SerialPortConnect()
-        {
-            if(_ardConnected == true){return;}
-            _selectedPort = PortDropDown.SelectedItem?.ToString();
-            if (BaudDropDown.SelectedItem is int){_selectedBaud = (int)BaudDropDown.SelectedItem;}
-            try {             
-                _serialPort = new SerialPort(_selectedPort);
-                _serialPort.BaudRate = _selectedBaud;
-                _serialPort.Open();
-            }
-            catch{
-                MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
-                _ardConnected = false;
-                return;
-            }
-            
-            MessageBox.Show("Connected");
-            _ardConnected = true;
-            return;
-        }
-
-        private void StartStream_Click(object sender, EventArgs e) //toggle
-        {
-            if (_running == true) { _running = false; }
-            else
-            {
-                pictureBox1.Show();
-                _running = true;
-            }
-            return;
-        }
-
-        private void ConnectCamera_Click(object sender, EventArgs e)
-        {
-            //initialize new resources
-            _captures = new VideoCapture(0);
-            _srcFrame = new Mat();
-            if (_captures.IsOpened() == false)
-            {
-                MessageBox.Show("Could not connect to camera. Please connect a camera and try again.");
-                return;
-            }
-
-            //calibrate our camera upon every new camera connect
-            calibrateCamera();
-
-
-            _captureThread = new Thread(new ThreadStart(grabFrame));
-            _streamThread = new Thread(new ThreadStart(Stream));
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, (int)_fpsVal, (int)(_fpsVal*10), (float)0.5, (float)0.5, (float)0.6);
-            _alive = true;
-            _captureThread.Start();
-            _streamThread.Start();
-
-            SetDisconnectButtonActive();
-            return;
-        }
-
-        private void DisconnectCamera_Click(object sender, EventArgs e)
-        {
-            KillThreads();
-
-            _captures?.Release();
-            _captures?.Dispose();
-            _captures = null;
-            _srcFrame?.Release();
-            _srcFrame?.Dispose();
-            _srcFrame = null;
-        
-
-            pictureBox1.Hide();
-            SetCameraButtonActive();
-            return;
-        }
-
-        private void SetDisconnectButtonActive()
-        {
-            ConnectCamera.Enabled = false;
-            DisconnectCamera.Enabled = true;
-            StartStream.Enabled = true;
-        }
-
-        private void SetCameraButtonActive()
-        {
-            ConnectCamera.Enabled = true;
-            DisconnectCamera.Enabled = false;
-            StartStream.Enabled = false;
-        }
-
-        //private void pictureBox1_Click(object sender, EventArgs e)
-        //{
-
-        //}
-
-        private void TrackEnable_Click(object sender, EventArgs e)
-        { activateTrackMode();}
-
-        private void activateTrackMode()
-        {
-            _trackingMode = true;
-            TrackEnable.Enabled = false;
-            TrackEnable.Visible = false;
-            DisableTrack.Enabled = true;
-            DisableTrack.Visible = true;
-        }
-
-        private void DisableTrack_Click(object sender, EventArgs e)
-        { deactivateTrackMode();}
-
-        private void deactivateTrackMode()
-        {
-            _trackingMode = false;
-            TrackEnable.Enabled = true;
-            TrackEnable.Visible = true;
-            DisableTrack.Enabled = false;
-            DisableTrack.Visible = false;
-        }
     }
 }

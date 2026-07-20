@@ -41,6 +41,7 @@
             ConnectArduino = new Button();
             TrackEnable = new Button();
             DisableTrack = new Button();
+            DisconnectArduino = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -164,11 +165,22 @@
             DisableTrack.UseVisualStyleBackColor = true;
             DisableTrack.Click += DisableTrack_Click;
             // 
+            // DisconnectArduino
+            // 
+            DisconnectArduino.Location = new Point(12, 629);
+            DisconnectArduino.Name = "DisconnectArduino";
+            DisconnectArduino.Size = new Size(121, 23);
+            DisconnectArduino.TabIndex = 12;
+            DisconnectArduino.Text = "Disconnect Arduino";
+            DisconnectArduino.UseVisualStyleBackColor = true;
+            DisconnectArduino.Click += DisconnectArduino_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(DisconnectArduino);
             Controls.Add(TrackEnable);
             Controls.Add(ConnectArduino);
             Controls.Add(BaudeRateLabel);
@@ -207,5 +219,6 @@
         private Button ConnectArduino;
         private Button TrackEnable;
         private Button DisableTrack;
+        private Button DisconnectArduino;
     }
 }
