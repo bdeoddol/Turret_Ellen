@@ -55,7 +55,7 @@ namespace Tracking
         private void SerialPortConnect()
         {
 
-            _selectedPort = PortDropDown.SelectedText;
+            _selectedPort = PortDropDown.SelectedItem as string;
             if (BaudDropDown.SelectedItem is int){_selectedBaud = (int)BaudDropDown.SelectedItem;}
             try
             {
@@ -102,7 +102,7 @@ namespace Tracking
 
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, (int)_fpsVal, (int)(_fpsVal * 10), (float)0.5, (float)0.5, (float)0.6);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, (int)_fpsVal, (int)(_fpsVal * 100), (float)0.5, (float)0.5, (float)0.6);
             _alive = true;
             _captureThread.Start();
             _streamThread.Start();
@@ -113,7 +113,10 @@ namespace Tracking
 
         private void DisconnectCamera_Click(object sender, EventArgs e)
         {
-            KillThreads();
+            _running = false;
+            _alive = false;
+            if (_captureThread != null) {_captureThread?.Join(500);}
+            if(_streamThread != null){_streamThread?.Join(500);}
 
             _captures?.Release();
             _captures?.Dispose();
@@ -160,11 +163,15 @@ namespace Tracking
         }
 
         private void DisableTrack_Click(object sender, EventArgs e)
-        { deactivateTrackMode(); }
+        { 
+            deactivateTrackMode();
+
+        }
 
         private void deactivateTrackMode()
         {
             _trackingMode = false;
+            _stateVar.ActiveTargets.Clear();
             TrackEnable.Enabled = true;
             TrackEnable.Visible = true;
             DisableTrack.Enabled = false;

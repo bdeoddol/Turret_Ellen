@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO.Ports;
 using System.Net;
 using System.Numerics.Tensors;
@@ -54,7 +55,7 @@ namespace Tracking
         private bool _fpsEnable = true;
         private Stopwatch _totalRuntime = new Stopwatch();
         private int _frameCnt = 0;
-        private double _elapsedSeconds;
+        private double _elapsedSeconds => _totalRuntime.Elapsed.Seconds;
         private double _fpsVal => _frameCnt / _elapsedSeconds;
         string? _fpsDisplay;
 
@@ -191,7 +192,7 @@ namespace Tracking
         {
             while (_alive == true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(25);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
@@ -217,19 +218,26 @@ namespace Tracking
             _frameCnt = 0;
             while (_alive == true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
                     _srcFrame.CopyTo(_processedFrame);
 
+                    
                     if (_trackingMode == true)
-                    { trackInFrame(); } //update the state variable
+                    { 
+                        trackInFrame();
+                        _stateVar.ActiveTargets = _detections.ToImmutableList(); //update the state variable
+                    }
+                    else
+                    {
+                        _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();
+                    }
                     if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         if (_fpsEnable == true)
                         {
-                            _elapsedSeconds = _totalRuntime.Elapsed.TotalSeconds;
                             if (_elapsedSeconds > 0)
                             {
                                 // double fpsVal = _frameCnt / _elapsedSeconds;
@@ -319,80 +327,123 @@ namespace Tracking
             return;
         }
 
-        // private void stateMachine()
-        // {
-        //     SerialCommand serialData;
-        //     while (_stateOperate == true)
-        //     {
-        //         Thread.Sleep(100);
-        //          //state swap
-        //         if(_currState == TurrState.Inactive)
-        //         {
-        //             Console.WriteLine("state : inactive");
-        //             if(_ardConnected == true){_currState = TurrState.Idle;}
-        //             else{_currState = TurrState.Inactive;}
-        //         }
-        //         else if(_currState == TurrState.Idle)
-        //         {
-        //             Console.WriteLine("state : idle");
-        //             if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //             else if (_remoteControl == true){_currState = TurrState.Remote;}
-        //             else if(_stateVar.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
-        //             else{_currState = TurrState.Idle; }
-        //         }
-        //         else if(_currState == TurrState.Track)
-        //         {   
-        //             Console.WriteLine("state : track");
-        //             if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //             else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //             else if(_stateVar.targetLost == true){_stateVar.timer.Reset(); _stateVar.timer.Start(); _currState = TurrState.Search;}
-        //             else if (_stateVar.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}    
-        //             else{_currState = TurrState.Track;}
-        //         }
-        //         else if(_currState == TurrState.Search)
-        //         {
-        //             Console.WriteLine("state : search");
-        //             if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //             else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //             // if (timerExceed4seconds)
-        //             // {
-        //             //     if(targetLostPlaceholder == false ){_currState = TurrState.Track;}
-        //             //     else if(_stateVar.ActiveTargets.IsEmpty == false || _stateVar.targetLost == false){_currState = TurrState.Idle;}    
-        //             // }
-        //             else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //             else if(_ardConnected == false){_currState = TurrState.Inactive;}
-                    
-        //         }
-        //         else if(_currState == TurrState.Remote)
-        //         {   
-        //             Console.WriteLine("state : remote");
-        //             if(_ardConnected == false){_currState = TurrState.Inactive;}
-        //             else if(_remoteControl == true){_currState = TurrState.Remote;}
-        //             else if(_stateVar.ActiveTargets.IsEmpty == true){_currState = TurrState.Idle;}
-        //             else if(_stateVar.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
-                    
-                    
-        //         }
-
-        //         ///////////////////stateevents//////////////////////
-               
-
-                
-        //     }
-           
-
-        // }
-
-        private void stateMachine() //TODO WORK ON STATE SWAPPING CONDITIONS FIRST
+        private void stateMachine()
         {
-            SerialData serialData;
-            while(_stateOperate == true)
+            SerialCommand serialData;
+            while (_stateOperate == true)
             {
                 Thread.Sleep(100);
+                //state swap
+                if (_currState == TurrState.Inactive)
+                {
+                    Console.WriteLine("state : inactive");
+                    if (_ardConnected == true) { _currState = TurrState.Idle; }
+                    else { _currState = TurrState.Inactive; }
+                }
+                else if (_currState == TurrState.Idle)
+                {
+                    Console.WriteLine("state : idle");
+                    if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    else if (_remoteControl == true) { _currState = TurrState.Remote; }
+                    else if (_stateVar.ActiveTargets.IsEmpty == false) { 
+                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                        _stateVar.timer.Reset(); 
+                        _stateVar.timer.Start(); 
+                        _currState = TurrState.Track;
+                    }
+                    //else { _currState = TurrState.Idle; }
+                }
+                else if (_currState == TurrState.Track)
+                {
+                    Console.WriteLine("state : track");
+                    if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    else if (_remoteControl == true) { _currState = TurrState.Remote; }
+                    else if (_stateVar.targetLost == true) { _stateVar.timer.Reset(); _stateVar.timer.Start(); _currState = TurrState.Search; }
+                    else if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                    //else { _currState = TurrState.Track; }
+                }
+                else if (_currState == TurrState.Search)
+                {
+                    Console.WriteLine("state : search");
+                    if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    else if (_remoteControl == true) { _currState = TurrState.Remote; }
+                    // if (timerExceed4seconds)
+                    // {
+                    //     if(targetLostPlaceholder == false ){_currState = TurrState.Track;}
+                    //     else if(_stateVar.ActiveTargets.IsEmpty == false || _stateVar.targetLost == false){_currState = TurrState.Idle;}    
+                    // }
+                    //else if (_remoteControl == true) { _currState = TurrState.Remote; }
+                    //else if (_ardConnected == false) { _currState = TurrState.Inactive; }
+
+                }
+                else if (_currState == TurrState.Remote)
+                {
+                    Console.WriteLine("state : remote");
+                    if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    else if (_remoteControl == true) { _currState = TurrState.Remote; }
+                    //else if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                    //else if (_stateVar.ActiveTargets.IsEmpty == false) { _currState = TurrState.Track; }
+
+
+                }
+
+                ///////////////////stateevents//////////////////////
+
+
+                if(_currState == TurrState.Track)
+                { 
+                    if(_stateVar.timer.Elapsed.Seconds > 4)
+                    {
+                       Console.WriteLine("tracking subject expired, swapping");
+                       _stateVar.cycleCurrIdx++;
+                        _stateVar.timer.Reset();
+                        _stateVar.timer.Start();
+                    }
+                    if((_stateVar.cycleCurrIdx + 1) > _stateVar.trackCycle.Count)
+                    {
+                        Console.WriteLine("trackcycle exhausted");
+                        _stateVar.cycleCurrIdx = 0;
+                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                        _stateVar.timer.Reset();
+                        _stateVar.timer.Start();
+                    }
+                    else if(_stateVar.trackCycle.Count == 0)
+                    {
+                        Console.WriteLine("empty trackcycle, rebuilding");
+                        _stateVar.cycleCurrIdx = 0;
+                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                        _stateVar.timer.Reset();
+                        _stateVar.timer.Start();
+                    }
+
+                    else if(_stateVar.ActiveTargets.Exists(x => x.detID == _stateVar.currDetId) == false)
+                    {
+                        Console.WriteLine("target lost");
+                        _stateVar.targetLost = true;
+                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                    }
+                }
+                // else if(_currState == TurrState.Search)
+                // {
+                //     if(_stateVar.ActiveTargets.Exists(x => x.detID == _stateVar.currDetId) == true)
+                //     {
+                //         _currState = TurrState.Track;   
+                //     }
+                //     else if(_stateVar.timer.Elapsed.Seconds > 4)
+                //     {
+
+                //         _currState = TurrState.Track;
+                //     }
+                // }
+
             }
+
+
         }
 
-     
+
+
+
 
     }
 }
