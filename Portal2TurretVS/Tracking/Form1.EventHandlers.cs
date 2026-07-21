@@ -124,7 +124,7 @@ namespace Tracking
         {
             _running = false;
             _alive = false;
-            _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();
+            _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();            
             if (_captureThread != null) {_captureThread?.Join(500);}
             if(_streamThread != null){_streamThread?.Join(500);}
 

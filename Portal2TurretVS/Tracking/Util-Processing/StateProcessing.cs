@@ -22,7 +22,7 @@ public class StateProcessing
         return retList;
     }
 
-    public static int FindNextValidIDX(ref StateVar statevariable)
+    public static int FindRemainingValidIDX(ref StateVar statevariable)
     {
 
         int startIdx = statevariable.cycleCurrIdx + 1;
@@ -52,6 +52,45 @@ public class StateProcessing
         statevariable.timer.Reset();
         statevariable.timer.Start();
     }
+
+    public static void StartDebounce(ref StateVar statevariable)
+    {
+        statevariable.debounce = true; 
+        statevariable.debounceTimer.Restart();
+    }
+    public static void StopDebounce(ref StateVar statevariable)
+    {
+        statevariable.debounce = false;
+        statevariable.debounceTimer.Reset();
+    }
+
+    public static void AdvanceNextValidIDX(ref StateVar statevariable)
+    {
+        int idx = FindRemainingValidIDX(ref statevariable); //attempt to find the next valid idx in the remainder of the cycle
+        if(idx == -1) //if no following valid, rebuild and reset
+        {
+            Console.WriteLine("could not find next valid trackidx, rebuilding cycle...");
+            statevariable.trackCycle = RebuildTrackCycle(statevariable.ActiveTargets.ToList()); //rebuild trackcycle
+            resetTrackcycle(ref statevariable, 0);
+        }
+        else //if found valid, reset timer and begin at valid idx
+        {
+            resetTrackcycle(ref statevariable, idx);  
+        }
+    }
+
+    public static void wipeStateVar(ref StateVar statevariable)
+    {
+        statevariable.ActiveTargets = statevariable.ActiveTargets.Clear();
+        statevariable.trackCycle.Clear();
+        statevariable.timer.Reset();
+        statevariable.debounceTimer.Reset();
+        statevariable.debounce = false;
+        statevariable.cycleCurrIdx = 0;
+        statevariable.centered = false;
+
+    }
+
 
     // public static bool FindNextValidID(ref StateVar statevariable)
     // {

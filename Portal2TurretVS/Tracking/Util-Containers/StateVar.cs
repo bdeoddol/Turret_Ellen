@@ -14,7 +14,8 @@ public class StateVar
         debounceTimer = new Stopwatch(); 
         cameraCalibration = new CameraCalib();
         centered = false;
-        debounceLim = 500;
+        trackDebounceLimMS = 1500;
+        searchDebounceLimMS = 1000;
         debounce = false;
         cycleCurrIdx = 0;
         
@@ -33,7 +34,8 @@ public class StateVar
     public Stopwatch timer {get;} //utility
     public Stopwatch debounceTimer{get;}
     public bool targetLost(int id) => !ActiveTargets.Exists(x => x.detID == id);
-    public double debounceLim{get;}
+    public double trackDebounceLimMS{get;}
+    public double searchDebounceLimMS{get;}
     public bool debounce{get;set;}
     public Detection? currDet => ActiveTargets.Find(x => x.detID == currDetId);
     public int cycleCurrIdx;
