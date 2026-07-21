@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             StartStream = new Button();
-            pictureBox1 = new PictureBox();
+            frameDisplay = new PictureBox();
             saveFileDialog1 = new SaveFileDialog();
             ConnectCamera = new Button();
             DisconnectCamera = new Button();
@@ -42,7 +42,9 @@
             TrackEnable = new Button();
             DisableTrack = new Button();
             DisconnectArduino = new Button();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            remoteField = new PictureBox();
+            ((System.ComponentModel.ISupportInitialize)frameDisplay).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)remoteField).BeginInit();
             SuspendLayout();
             // 
             // StartStream
@@ -55,17 +57,17 @@
             StartStream.UseVisualStyleBackColor = true;
             StartStream.Click += StartStream_Click;
             // 
-            // pictureBox1
+            // frameDisplay
             // 
-            pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pictureBox1.BackColor = SystemColors.Control;
-            pictureBox1.InitialImage = null;
-            pictureBox1.Location = new Point(209, 12);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(851, 641);
-            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox1.TabIndex = 1;
-            pictureBox1.TabStop = false;
+            frameDisplay.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            frameDisplay.BackColor = SystemColors.Control;
+            frameDisplay.InitialImage = null;
+            frameDisplay.Location = new Point(209, 12);
+            frameDisplay.Name = "frameDisplay";
+            frameDisplay.Size = new Size(851, 641);
+            frameDisplay.SizeMode = PictureBoxSizeMode.Zoom;
+            frameDisplay.TabIndex = 1;
+            frameDisplay.TabStop = false;
             // 
             // ConnectCamera
             // 
@@ -175,11 +177,24 @@
             DisconnectArduino.UseVisualStyleBackColor = true;
             DisconnectArduino.Click += DisconnectArduino_Click;
             // 
+            // remoteField
+            // 
+            remoteField.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            remoteField.BackColor = Color.Transparent;
+            remoteField.InitialImage = null;
+            remoteField.Location = new Point(251, 44);
+            remoteField.Name = "remoteField";
+            remoteField.Size = new Size(766, 577);
+            remoteField.SizeMode = PictureBoxSizeMode.Zoom;
+            remoteField.TabIndex = 13;
+            remoteField.TabStop = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(remoteField);
             Controls.Add(DisconnectArduino);
             Controls.Add(TrackEnable);
             Controls.Add(ConnectArduino);
@@ -190,7 +205,7 @@
             Controls.Add(PortDropDown);
             Controls.Add(DisconnectCamera);
             Controls.Add(ConnectCamera);
-            Controls.Add(pictureBox1);
+            Controls.Add(frameDisplay);
             Controls.Add(StartStream);
             Controls.Add(DisableTrack);
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -199,7 +214,8 @@
             Text = "Form1";
             TopMost = true;
             Load += Form1_Load;
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)frameDisplay).EndInit();
+            ((System.ComponentModel.ISupportInitialize)remoteField).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -207,7 +223,7 @@
         #endregion
 
         private Button StartStream;
-        private PictureBox pictureBox1;
+        private PictureBox frameDisplay;
         private SaveFileDialog saveFileDialog1;
         private Button ConnectCamera;
         private Button DisconnectCamera;
@@ -220,5 +236,6 @@
         private Button TrackEnable;
         private Button DisableTrack;
         private Button DisconnectArduino;
+        private PictureBox remoteField;
     }
 }

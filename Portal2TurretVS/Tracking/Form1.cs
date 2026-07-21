@@ -173,6 +173,12 @@ namespace Tracking
             Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
+
+            //the remote field should always be 90% of the displayed frame
+            remoteField.Height = (int)(_srcFrame.Height * 0.90);
+            remoteField.Width = (int)(_srcFrame.Width * 0.90);
+            //remoteField.Left = frameDisplay.Left + (int)((_srcFrame.Width-remoteField.Width)/2);
+
             _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
             _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
             _stateVar.cameraCalibration.VertFOV = 33.836;
@@ -195,7 +201,7 @@ namespace Tracking
                 Thread.Sleep(25);
                 if (_running == true)
                 {
-                    if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
+                    if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !frameDisplay.IsHandleCreated) { continue; }
                     _captures?.Read(_srcFrame); //decode the next frame from the video stream and store it in _srcframe
 
 
@@ -220,7 +226,7 @@ namespace Tracking
                 Thread.Sleep(50);
                 if (_running == true)
                 {
-                    if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !pictureBox1.IsHandleCreated) { continue; }
+                    if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !frameDisplay.IsHandleCreated) { continue; }
                     _srcFrame.CopyTo(_processedFrame);
 
                     
@@ -233,7 +239,7 @@ namespace Tracking
                     {
                         _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();
                     }
-                    if (pictureBox1.InvokeRequired == true && !pictureBox1.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
+                    if (frameDisplay.InvokeRequired == true && !frameDisplay.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
                         if (_fpsEnable == true)
                         {
@@ -247,7 +253,7 @@ namespace Tracking
                         }
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
                         //we delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
-                        pictureBox1.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
+                        frameDisplay.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
                     }
                 }
 
@@ -259,11 +265,11 @@ namespace Tracking
         private void swapFrames()
         {
 
-            if (!_alive || _processedFrame == null || _processedFrame.Empty() || pictureBox1.IsDisposed) { return; } //bail out of the method if any of these are true.
+            if (!_alive || _processedFrame == null || _processedFrame.Empty() || frameDisplay.IsDisposed) { return; } //bail out of the method if any of these are true.
             //swap the old frame with new one, display new frame, free memory of the old frame
             if (_displayFrame != null) { _oldFrame = _displayFrame; }
             _displayFrame = BitmapConverter.ToBitmap(_processedFrame);
-            pictureBox1.Image = _displayFrame;
+            frameDisplay.Image = _displayFrame;
             _oldFrame?.Dispose();
             _frameCnt++;
             return;
@@ -329,6 +335,7 @@ namespace Tracking
         private void stateMachine()
         {
             SerialCommand serialData;
+            _ardConnected = true; //for debug
             while (_stateOperate == true)
             {
                 Thread.Sleep(100);

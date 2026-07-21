@@ -80,7 +80,7 @@ namespace Tracking
             if (_running == true) { _totalRuntime.Stop(); _running = false; }
             else
             {
-                pictureBox1.Show();
+                frameDisplay.Show();
                 _totalRuntime.Start();
                 _running = true;
             }
@@ -136,7 +136,7 @@ namespace Tracking
             _srcFrame = null;
 
 
-            pictureBox1.Hide();
+            frameDisplay.Hide();
             SetCameraButtonActive();
             return;
         }
