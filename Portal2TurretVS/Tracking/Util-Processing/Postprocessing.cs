@@ -79,7 +79,7 @@ public class Postprocessing
 
         // List<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
         filterByClassOPT(ref output, 0);
-        filterByConfidenceOPT(ref output, 0.5);
+        filterByConfidenceOPT(ref output, 0.25);
 
         // List<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls;

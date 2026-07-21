@@ -2,6 +2,7 @@
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO.Ports;
 using System.Text;
 
@@ -76,10 +77,11 @@ namespace Tracking
 
         private void StartStream_Click(object sender, EventArgs e) //toggle
         {
-            if (_running == true) { _running = false; }
+            if (_running == true) { _totalRuntime.Stop(); _running = false; }
             else
             {
                 pictureBox1.Show();
+                _totalRuntime.Start();
                 _running = true;
             }
             return;
@@ -102,7 +104,14 @@ namespace Tracking
 
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, (int)_fpsVal, (int)(_fpsVal * 100), (float)0.5, (float)0.5, (float)0.6);
+
+            //after testing, aavg fps was  reported as 7
+            //desired max time lost is decided to be 5 seconds, calculated ast maxtimelost(fps) = (fps/30)*track buffer
+            //track buffer here is calculated to be 150
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 7, 150, (float)0.5, (float)0.5, (float)0.6);
+            _totalRuntime.Reset();
+            _frameCnt = 0;
+
             _alive = true;
             _captureThread.Start();
             _streamThread.Start();
@@ -115,6 +124,7 @@ namespace Tracking
         {
             _running = false;
             _alive = false;
+            _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();
             if (_captureThread != null) {_captureThread?.Join(500);}
             if(_streamThread != null){_streamThread?.Join(500);}
 

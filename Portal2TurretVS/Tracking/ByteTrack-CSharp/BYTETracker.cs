@@ -10,7 +10,7 @@ public class BYTETracker
     private readonly float track_thresh_;
     private readonly float high_thresh_;
     private readonly float match_thresh_;
-    private readonly int max_time_lost_;
+    private readonly int max_time_lost_FPS;
 
     private int frame_id_;
     private int track_id_count_;
@@ -27,7 +27,7 @@ public class BYTETracker
         track_thresh_ = track_thresh;
         high_thresh_ = high_thresh;
         match_thresh_ = match_thresh;
-        max_time_lost_ = (int)(frame_rate / 30f * track_buffer);
+        max_time_lost_FPS = (int)(frame_rate / 30f * track_buffer);
         frame_id_ = 0;
         track_id_count_ = 0;
     }
@@ -203,7 +203,7 @@ public class BYTETracker
         ////////////////// Step 5: Update state //////////////////
         foreach (var lost_strack in lost_stracks_)
         {
-            if (frame_id_ - lost_strack.FrameId > max_time_lost_)
+            if (frame_id_ - lost_strack.FrameId > max_time_lost_FPS)
             {
                 lost_strack.markAsRemoved();
                 current_removed_stracks.Add(lost_strack);

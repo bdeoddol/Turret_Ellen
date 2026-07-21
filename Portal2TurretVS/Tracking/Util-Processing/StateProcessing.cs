@@ -1,3 +1,4 @@
+using System.Diagnostics.Eventing.Reader;
 using System.Reflection;
 
 public class StateProcessing
@@ -19,6 +20,37 @@ public class StateProcessing
         }
         
         return retList;
+    }
+
+    public static int FindNextValidIDX(ref StateVar statevariable)
+    {
+
+        int startIdx = statevariable.cycleCurrIdx + 1;
+        int cycleCount = statevariable.trackCycle.Count;
+        List<int> cycle = statevariable.trackCycle; //copy by reference
+        int foundIdx = -1;
+        for(int i = startIdx; i < cycleCount; i++)
+        {
+            Console.WriteLine("checking for existing detection for index: " + i);
+            if(statevariable.ActiveTargets.Exists(x=>x.detID == cycle[i]) == true)
+            {
+                //we have found an existing detId
+                Console.WriteLine("Found detection at cycleidx: " + i);
+                foundIdx = i;
+
+                return foundIdx;
+            }
+            
+        }
+        return foundIdx;
+    }
+
+    //reset the tracktimer and begin at a given index called "resetIdx"
+    public static void resetTrackcycle(ref StateVar statevariable, int resetIdx)
+    {
+        statevariable.cycleCurrIdx = resetIdx;
+        statevariable.timer.Reset();
+        statevariable.timer.Start();
     }
 
     // public static bool FindNextValidID(ref StateVar statevariable)

@@ -215,7 +215,6 @@ namespace Tracking
         private void Stream()
         {
             _totalRuntime.Start();
-            _frameCnt = 0;
             while (_alive == true)
             {
                 Thread.Sleep(50);
@@ -330,6 +329,7 @@ namespace Tracking
         private void stateMachine()
         {
             SerialCommand serialData;
+            int idx;
             while (_stateOperate == true)
             {
                 Thread.Sleep(100);
@@ -347,33 +347,73 @@ namespace Tracking
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
                     else if (_stateVar.ActiveTargets.IsEmpty == false) { 
                         _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                        _stateVar.timer.Reset(); 
-                        _stateVar.timer.Start(); 
+                        StateProcessing.resetTrackcycle(ref _stateVar, 0);
                         _currState = TurrState.Track;
                     }
                     //else { _currState = TurrState.Idle; }
                 }
                 else if (_currState == TurrState.Track)
                 {
-                    Console.WriteLine("state : track");
+                    Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.targetLost == true) { _stateVar.timer.Reset(); _stateVar.timer.Start(); _currState = TurrState.Search; }
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == true) {
+                        // if(_stateVar.debounce == false){
+                        //     Console.WriteLine("Debounce triggered");
+                        //     _stateVar.debounce = true; 
+                        //     _stateVar.debounceTimer.Restart();
+                        // }
+                        // else if(_stateVar.debounceTimer.Elapsed.Milliseconds > _stateVar.debounceLim)
+                        // {
+                            Console.WriteLine("target ID " + _stateVar.currDetId + " lost");
+                            _stateVar.debounce = false;
+                            _stateVar.debounceTimer.Reset();
+                            _stateVar.timer.Reset(); 
+                            _stateVar.timer.Start();  
+                            _currState = TurrState.Search; 
+                        // }
+                    }
+                    
                     else if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
                     //else { _currState = TurrState.Track; }
                 }
                 else if (_currState == TurrState.Search)
                 {
-                    Console.WriteLine("state : search");
+                    Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    // if (timerExceed4seconds)
-                    // {
-                    //     if(targetLostPlaceholder == false ){_currState = TurrState.Track;}
-                    //     else if(_stateVar.ActiveTargets.IsEmpty == false || _stateVar.targetLost == false){_currState = TurrState.Idle;}    
-                    // }
-                    //else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    //else if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    else if(_stateVar.targetLost(_stateVar.currDetId) == false && _stateVar.timer.Elapsed.TotalSeconds < 4)
+                    {
+                        //rebuild our trackcycle and reacquire its index
+                        Console.WriteLine("Found lost ID " + _stateVar.currDetId);
+                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                        StateProcessing.resetTrackcycle(ref _stateVar, _stateVar.trackCycle.FindIndex(x=> x == _stateVar.currDetId));
+                        _currState = TurrState.Track;                        
+                    }
+                    else if(_stateVar.timer.Elapsed.TotalSeconds > 4)
+                    {
+                        if(_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                        else
+                        {
+                            idx = StateProcessing.FindNextValidIDX(ref _stateVar);
+                            if(idx == -1)
+                            {
+                                Console.WriteLine("could not find next valid trackidx, rebuilding cycle...");
+                                _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                                StateProcessing.resetTrackcycle(ref _stateVar, 0);
+                            }
+                            else
+                            {
+                                StateProcessing.resetTrackcycle(ref _stateVar, idx);
+                                  
+                            }
+                            _currState = TurrState.Track;  
+                        }
+
+                    }
+                    else if (_stateVar.ActiveTargets.IsEmpty == true && _stateVar.timer.Elapsed.TotalSeconds > 4) { _currState = TurrState.Idle; }
+
+
 
                 }
                 else if (_currState == TurrState.Remote)
@@ -392,47 +432,44 @@ namespace Tracking
 
                 if(_currState == TurrState.Track)
                 { 
-                    if(_stateVar.timer.Elapsed.Seconds > 4)
+                    if(_stateVar.timer.Elapsed.TotalSeconds > 4)
                     {
-                       Console.WriteLine("tracking subject expired, swapping");
-                       _stateVar.cycleCurrIdx++;
-                        _stateVar.timer.Reset();
-                        _stateVar.timer.Start();
-                    }
-                    if((_stateVar.cycleCurrIdx + 1) > _stateVar.trackCycle.Count)
-                    {
-                        Console.WriteLine("trackcycle exhausted");
-                        _stateVar.cycleCurrIdx = 0;
-                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                        _stateVar.timer.Reset();
-                        _stateVar.timer.Start();
+                       Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
+                       idx = StateProcessing.FindNextValidIDX(ref _stateVar);
+                        if(idx == -1)
+                        {
+                            Console.WriteLine("could not find next valid trackidx, rebuilding cycle...");
+                            _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                            StateProcessing.resetTrackcycle(ref _stateVar, 0);
+                        }
+                        else
+                        {
+                            StateProcessing.resetTrackcycle(ref _stateVar, idx);
+                        }
                     }
                     else if(_stateVar.trackCycle.Count == 0)
                     {
                         Console.WriteLine("empty trackcycle, rebuilding");
-                        _stateVar.cycleCurrIdx = 0;
                         _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                        _stateVar.timer.Reset();
-                        _stateVar.timer.Start();
+                        StateProcessing.resetTrackcycle(ref _stateVar, 0);
                     }
 
-                    else if(_stateVar.ActiveTargets.Exists(x => x.detID == _stateVar.currDetId) == false)
-                    {
-                        Console.WriteLine("target lost");
-                        _stateVar.targetLost = true;
-                        _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                    }
                 }
                 // else if(_currState == TurrState.Search)
                 // {
-                //     if(_stateVar.ActiveTargets.Exists(x => x.detID == _stateVar.currDetId) == true)
+                //     if(_stateVar.timer.Elapsed.Seconds > 4 )
                 //     {
-                //         _currState = TurrState.Track;   
-                //     }
-                //     else if(_stateVar.timer.Elapsed.Seconds > 4)
-                //     {
-
-                //         _currState = TurrState.Track;
+                //         int idx = StateProcessing.FindNextValidIDX(ref _stateVar);
+                //         if(idx == -1)
+                //         {
+                //             Console.WriteLine("could not find next valid trackidx, rebuilding cycle...");
+                //             _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
+                //             StateProcessing.resetTrackcycle(ref _stateVar, 0);
+                //         }
+                //         else
+                //         {
+                //             StateProcessing.resetTrackcycle(ref _stateVar, idx);
+                //         }
                 //     }
                 // }
 

@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Security.Cryptography.Xml;
 
 public class StateVar
 {
@@ -10,11 +11,12 @@ public class StateVar
         ActiveTargets = ImmutableList.Create<Detection>();
         trackCycle = new List<int>(); 
         timer = new Stopwatch();
+        debounceTimer = new Stopwatch(); 
         cameraCalibration = new CameraCalib();
         centered = false;
-        targetLost = false;
+        debounceLim = 500;
+        debounce = false;
         cycleCurrIdx = 0;
-        currDet = null;
         
     }
     
@@ -28,18 +30,17 @@ public class StateVar
         //The cycle has been exhausted                                 //use this _stateVariable?._trackCycle.Last() == currvalue we are looking at
         //The cycle is empty                                          //use this _stateVariable._trackCycle.Count == 0
         //The current tracking detection is lost in active targets   //use this _stateVariable?.ActiveTargets.Exists(x => x.detID == [id value]);
-    public Stopwatch timer {get;set;} //utility
-
-    public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations
-
-    public bool centered{get;set;}
-    public bool targetLost{get;set;}
-    public Detection? currDet;
+    public Stopwatch timer {get;} //utility
+    public Stopwatch debounceTimer{get;}
+    public bool targetLost(int id) => !ActiveTargets.Exists(x => x.detID == id);
+    public double debounceLim{get;}
+    public bool debounce{get;set;}
+    public Detection? currDet => ActiveTargets.Find(x => x.detID == currDetId);
     public int cycleCurrIdx;
     public int currDetId => trackCycle[cycleCurrIdx];
 
-    
-
+    public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations
+    public bool centered{get;set;}
 
 
 
