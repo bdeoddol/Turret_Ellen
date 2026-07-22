@@ -40,8 +40,8 @@ public class Preprocessing
         foreach(string val in samplePaths)
         {
             sampleFrame = Cv2.ImRead(val);
-            sampleSrc = Preprocessing.prepareSrc(sampleFrame);
-            sampleShape = Preprocessing.prepareShape(sampleFrame);
+            sampleSrc = prepareSrc(sampleFrame);
+            sampleShape = prepareShape(sampleFrame);
             using var sampleOuput = Postprocessing.infer(sampleSrc, sampleShape, ref inferenceModel);
             }
     }

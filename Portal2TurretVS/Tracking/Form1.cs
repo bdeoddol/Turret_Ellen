@@ -352,18 +352,21 @@ namespace Tracking
         {
             SerialCommand serialData;
             // _ardConnected = true; //for debug
+            int pollRate = 350;
             while (_stateOperate == true)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(pollRate);
                 //state swap
                 if (_currState == TurrState.Inactive)
                 {
+                    pollRate = 1000;
                     Console.WriteLine("state : inactive");
                     if (_ardConnected == true) { _currState = TurrState.Idle; }
                     else { _currState = TurrState.Inactive; }
                 }
                 else if (_currState == TurrState.Idle)
                 {
+                    pollRate = 200;
                     Console.WriteLine("state : idle");
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
@@ -375,6 +378,7 @@ namespace Tracking
                 }
                 else if (_currState == TurrState.Track)
                 {
+                    pollRate = 75;
                     Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
@@ -404,6 +408,7 @@ namespace Tracking
                 }
                 else if (_currState == TurrState.Search)
                 {
+                    pollRate = 100;
                     Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
