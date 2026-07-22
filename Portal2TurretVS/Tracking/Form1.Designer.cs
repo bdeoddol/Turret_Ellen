@@ -42,9 +42,10 @@
             TrackEnable = new Button();
             DisableTrack = new Button();
             DisconnectArduino = new Button();
-            remoteField = new PictureBox();
+            remoteField = new Panel();
+            RmNableBut = new Button();
+            RmDsblBut = new Button();
             ((System.ComponentModel.ISupportInitialize)frameDisplay).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)remoteField).BeginInit();
             SuspendLayout();
             // 
             // StartStream
@@ -68,6 +69,7 @@
             frameDisplay.SizeMode = PictureBoxSizeMode.Zoom;
             frameDisplay.TabIndex = 1;
             frameDisplay.TabStop = false;
+            frameDisplay.Resize += frameDisplay_Resize;
             // 
             // ConnectCamera
             // 
@@ -92,7 +94,7 @@
             // PortDropDown
             // 
             PortDropDown.FormattingEnabled = true;
-            PortDropDown.Location = new Point(12, 486);
+            PortDropDown.Location = new Point(12, 422);
             PortDropDown.Name = "PortDropDown";
             PortDropDown.Size = new Size(121, 23);
             PortDropDown.TabIndex = 4;
@@ -101,7 +103,7 @@
             // 
             // PortRefresh
             // 
-            PortRefresh.Location = new Point(12, 562);
+            PortRefresh.Location = new Point(12, 498);
             PortRefresh.Name = "PortRefresh";
             PortRefresh.Size = new Size(75, 23);
             PortRefresh.TabIndex = 5;
@@ -112,7 +114,7 @@
             // BaudDropDown
             // 
             BaudDropDown.FormattingEnabled = true;
-            BaudDropDown.Location = new Point(12, 533);
+            BaudDropDown.Location = new Point(12, 469);
             BaudDropDown.Name = "BaudDropDown";
             BaudDropDown.Size = new Size(121, 23);
             BaudDropDown.TabIndex = 6;
@@ -122,7 +124,7 @@
             // PortNameLabel
             // 
             PortNameLabel.AutoSize = true;
-            PortNameLabel.Location = new Point(12, 468);
+            PortNameLabel.Location = new Point(12, 404);
             PortNameLabel.Name = "PortNameLabel";
             PortNameLabel.Size = new Size(64, 15);
             PortNameLabel.TabIndex = 7;
@@ -131,7 +133,7 @@
             // BaudeRateLabel
             // 
             BaudeRateLabel.AutoSize = true;
-            BaudeRateLabel.Location = new Point(12, 515);
+            BaudeRateLabel.Location = new Point(12, 451);
             BaudeRateLabel.Name = "BaudeRateLabel";
             BaudeRateLabel.Size = new Size(66, 15);
             BaudeRateLabel.TabIndex = 8;
@@ -139,7 +141,7 @@
             // 
             // ConnectArduino
             // 
-            ConnectArduino.Location = new Point(12, 629);
+            ConnectArduino.Location = new Point(12, 527);
             ConnectArduino.Name = "ConnectArduino";
             ConnectArduino.Size = new Size(121, 24);
             ConnectArduino.TabIndex = 9;
@@ -149,7 +151,7 @@
             // 
             // TrackEnable
             // 
-            TrackEnable.Location = new Point(12, 429);
+            TrackEnable.Location = new Point(12, 594);
             TrackEnable.Name = "TrackEnable";
             TrackEnable.Size = new Size(102, 23);
             TrackEnable.TabIndex = 10;
@@ -159,7 +161,7 @@
             // 
             // DisableTrack
             // 
-            DisableTrack.Location = new Point(12, 429);
+            DisableTrack.Location = new Point(12, 594);
             DisableTrack.Name = "DisableTrack";
             DisableTrack.Size = new Size(102, 23);
             DisableTrack.TabIndex = 11;
@@ -169,7 +171,7 @@
             // 
             // DisconnectArduino
             // 
-            DisconnectArduino.Location = new Point(12, 629);
+            DisconnectArduino.Location = new Point(12, 527);
             DisconnectArduino.Name = "DisconnectArduino";
             DisconnectArduino.Size = new Size(121, 23);
             DisconnectArduino.TabIndex = 12;
@@ -179,21 +181,41 @@
             // 
             // remoteField
             // 
-            remoteField.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            remoteField.BackColor = Color.Transparent;
-            remoteField.InitialImage = null;
-            remoteField.Location = new Point(251, 44);
+            remoteField.Anchor = AnchorStyles.None;
+            remoteField.BackColor = SystemColors.MenuHighlight;
+            remoteField.Location = new Point(294, 76);
             remoteField.Name = "remoteField";
-            remoteField.Size = new Size(766, 577);
-            remoteField.SizeMode = PictureBoxSizeMode.Zoom;
+            remoteField.Size = new Size(681, 513);
             remoteField.TabIndex = 13;
-            remoteField.TabStop = false;
+            remoteField.Click += remoteField_Click;
+            // 
+            // RmNableBut
+            // 
+            RmNableBut.Location = new Point(12, 623);
+            RmNableBut.Name = "RmNableBut";
+            RmNableBut.Size = new Size(102, 23);
+            RmNableBut.TabIndex = 0;
+            RmNableBut.Text = "Enable Remote";
+            RmNableBut.UseVisualStyleBackColor = true;
+            RmNableBut.Click += RmNableBut_Click;
+            // 
+            // RmDsblBut
+            // 
+            RmDsblBut.Location = new Point(12, 623);
+            RmDsblBut.Name = "RmDsblBut";
+            RmDsblBut.Size = new Size(102, 23);
+            RmDsblBut.TabIndex = 14;
+            RmDsblBut.Text = "Disable Remote";
+            RmDsblBut.UseVisualStyleBackColor = true;
+            RmDsblBut.Click += RmDsblBut_Click;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(RmDsblBut);
+            Controls.Add(RmNableBut);
             Controls.Add(remoteField);
             Controls.Add(DisconnectArduino);
             Controls.Add(TrackEnable);
@@ -205,9 +227,9 @@
             Controls.Add(PortDropDown);
             Controls.Add(DisconnectCamera);
             Controls.Add(ConnectCamera);
-            Controls.Add(frameDisplay);
             Controls.Add(StartStream);
             Controls.Add(DisableTrack);
+            Controls.Add(frameDisplay);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MinimumSize = new Size(904, 568);
             Name = "Form1";
@@ -215,7 +237,6 @@
             TopMost = true;
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)frameDisplay).EndInit();
-            ((System.ComponentModel.ISupportInitialize)remoteField).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -236,6 +257,8 @@
         private Button TrackEnable;
         private Button DisableTrack;
         private Button DisconnectArduino;
-        private PictureBox remoteField;
+        private Panel remoteField;
+        private Button RmNableBut;
+        private Button RmDsblBut;
     }
 }

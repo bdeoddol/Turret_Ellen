@@ -29,29 +29,26 @@ namespace Tracking
         private void ConnectArduino_Click(object sender, EventArgs e)
         { 
             SerialPortConnect();
-            if(_ardConnected == true) { ArduinoButtonActivated(); }
+            UpdateRemoteStatus(false);
             return;
         }
+
         private void DisconnectArduino_Click(object sender, EventArgs e)
         {
             _serialPort?.Close();
             _ardConnected = false;
-            ArduinoButtonDeactivated();
+            UpdateArduinoStatus(false);
+            UpdateRemoteStatus(false);
+
 
         }
-        private void ArduinoButtonActivated()
+        private void UpdateArduinoStatus(bool status)
         {
-            ConnectArduino.Enabled = false;
-            ConnectArduino.Visible = false;
-            DisconnectArduino.Enabled = true;
-            DisconnectArduino.Visible = true;
-        }
-        private void ArduinoButtonDeactivated()
-        {
-            ConnectArduino.Enabled = true;
-            ConnectArduino.Visible = true;
-            DisconnectArduino.Enabled = false;
-            DisconnectArduino.Visible = false;
+            _ardConnected = status;
+            ConnectArduino.Enabled = !status;
+            ConnectArduino.Visible = !status;
+            DisconnectArduino.Enabled = status;
+            DisconnectArduino.Visible = status;
         }
         private void SerialPortConnect()
         {
@@ -67,10 +64,10 @@ namespace Tracking
             catch
             {
                 MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
-                _ardConnected = false;
+                UpdateArduinoStatus(false);
                 return;
             }
-            _ardConnected = true;
+            UpdateArduinoStatus(true);
 
             return;
         }
@@ -100,7 +97,6 @@ namespace Tracking
 
             //calibrate our camera upon every new camera connect
             calibrateCamera();
-
 
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
@@ -161,34 +157,103 @@ namespace Tracking
         //}
 
         private void TrackEnable_Click(object sender, EventArgs e)
-        { activateTrackMode(); }
-
-        private void activateTrackMode()
-        {
-            _trackingMode = true;
-            TrackEnable.Enabled = false;
-            TrackEnable.Visible = false;
-            DisableTrack.Enabled = true;
-            DisableTrack.Visible = true;
-        }
+        { UpdateTrackStatus(true); }
 
         private void DisableTrack_Click(object sender, EventArgs e)
-        { 
-            deactivateTrackMode();
+        { UpdateTrackStatus(false); }
 
-        }
-
-        private void deactivateTrackMode()
+        private void UpdateTrackStatus(bool status)
         {
-            _trackingMode = false;
-            _stateVar.ActiveTargets.Clear();
-            TrackEnable.Enabled = true;
-            TrackEnable.Visible = true;
-            DisableTrack.Enabled = false;
-            DisableTrack.Visible = false;
+            _trackingMode = status;
+            TrackEnable.Enabled = !status;
+            TrackEnable.Visible = !status;
+            DisableTrack.Enabled = status;
+            DisableTrack.Visible = status;
+        }
+
+        private void frameDisplay_Resize(object sender, EventArgs e)
+        {
+            BeginInvoke(new Action(LayoutRemoteField));
+            // Schedule the layout update on the UI thread, occurs asynchronously after the resize event is processed to prevent blocking and incomplete 
+            // layout  calculations during the resize event. This ensures that the layout is updated correctly after the control (frameDisplay) has been resized.
+        }
+
+        private void LayoutRemoteField()
+        {
+            System.Drawing.Size imgRect = GetDisplayedImageSize(frameDisplay);
+            if (imgRect == System.Drawing.Size.Empty) return;
+
+            remoteField.Width = (int)(imgRect.Width * 0.8);
+            remoteField.Height = (int)(imgRect.Height * 0.8);
+
+            remoteField.Left = frameDisplay.Left + ((frameDisplay.ClientSize.Width-imgRect.Width)/2) + ((imgRect.Width - remoteField.Width) / 2);
+            remoteField.Top = frameDisplay.Top + ((frameDisplay.ClientSize.Height - imgRect.Height)/2) + ((imgRect.Height - remoteField.Height) / 2);
+            //https://stackoverflow.com/questions/23659647/how-to-get-displayed-image-dimensions-of-an-image-scaled-to-fit-a-picturebox#comment36342004_23659815
         }
 
 
+        // Source - https://stackoverflow.com/a/39847866
+        // Posted by Robert Rodriguez
+        // Retrieved 2026-07-21, License - CC BY-SA 3.0
+
+        private System.Drawing.Size GetDisplayedImageSize(PictureBox pictureBox)
+        {
+            System.Drawing.Size containerSize = pictureBox.ClientSize;
+            float containerAspectRatio = (float)containerSize.Height / (float)containerSize.Width;
+
+            if(pictureBox.Image == null) { return System.Drawing.Size.Empty; }
+            System.Drawing.Size originalImageSize = pictureBox.Image.Size;
+            float imageAspectRatio = (float)originalImageSize.Height / (float)originalImageSize.Width;
+
+            System.Drawing.Size result = new System.Drawing.Size();
+            if (containerAspectRatio > imageAspectRatio)
+            {
+                result.Width = containerSize.Width;
+                result.Height = (int)(imageAspectRatio * (float)containerSize.Width);
+            }
+            else
+            {
+                result.Height = containerSize.Height;
+                result.Width = (int)((1.0f / imageAspectRatio) * (float)containerSize.Height);
+            }
+            return result;
+        }
+
+        private void remoteField_Click(object sender, EventArgs e)
+        { 
+        
+        
+        
+        }
+
+        private void RmDsblBut_Click(object sender, EventArgs e)
+        {
+            UpdateRemoteStatus(false);
+        }
+
+        private void RmNableBut_Click(object sender, EventArgs e)
+        {
+            UpdateRemoteStatus(true);
+        }
+
+        private void UpdateRemoteStatus(bool status)
+        {
+            if(_ardConnected == false)
+            {
+                _remoteControl = false;
+                RmNableBut.Enabled = false;
+                RmNableBut.Visible = false;
+                RmDsblBut.Enabled = false;
+                RmDsblBut.Visible = false;
+                return;
+            }
+            _remoteControl = status;
+            RmNableBut.Enabled = !status;
+            RmNableBut.Visible = !status;
+            RmDsblBut.Enabled = status;
+            RmDsblBut.Visible = status;
+            return;
+        }
 
 
     }

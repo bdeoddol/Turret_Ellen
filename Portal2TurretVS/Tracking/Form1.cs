@@ -71,7 +71,7 @@ namespace Tracking
         private StateVar _stateVar = new();
         private Thread? _stateThread;
         private bool _stateOperate = false;
-        
+
         //Remote Control Variables
         private bool _remoteControl;
 
@@ -95,7 +95,7 @@ namespace Tracking
 
 
 
-            deactivateTrackMode();
+            UpdateTrackStatus(false);
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
@@ -116,12 +116,15 @@ namespace Tracking
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
             BaudDropDown.SelectedIndex = 0;
             _ardConnected = false;
-            ArduinoButtonDeactivated();
-    
+            UpdateArduinoStatus(false);
+            UpdateRemoteStatus(false);
+
             _stateThread = new Thread(new ThreadStart(stateMachine));
             _stateOperate = true;
             _stateThread.Start();
         }
+
+        
 
         private void Form1_Closed(object? sender, EventArgs e)
         {
@@ -158,9 +161,9 @@ namespace Tracking
             _running = false;
             _alive = false;
             _stateOperate = false;
-            if(_stateThread != null){_stateThread.Join(500);}
-            if (_captureThread != null) {_captureThread?.Join(500);}
-            if(_streamThread != null){_streamThread?.Join(500);}
+            if (_stateThread != null) { _stateThread.Join(500); }
+            if (_captureThread != null) { _captureThread?.Join(500); }
+            if (_streamThread != null) { _streamThread?.Join(500); }
         }
 
         //function to be called upon every camera connection
@@ -169,21 +172,26 @@ namespace Tracking
             if (_captures == null || _srcFrame == null) { return false; }
             _captures.Set(VideoCaptureProperties.FrameWidth, 960);
             _captures.Set(VideoCaptureProperties.FrameHeight, 540);
-            _captures.Read(_srcFrame);
+
+
+            /* explanation:
+             * it's possible for the user to swap in a new camera that has a different camera size and/or resolution.
+             * This means that our image size can potentially change and throw off our centered/resized remoteField component.
+             * We should capture the frame, and store it into the picturebox,
+             * then resize/center the remote field layout accordingly before we display our newly capture frame.
+             * This can be easily achieved within the calibrateCamera() function, which is called upon every new camera connection.
+             */
+            _captures.Read(_srcFrame); //capture a sample frame for calibration data
+            frameDisplay.BeginInvoke(new Action(swapFrames)); //swap into frameDisplay
+            BeginInvoke(new Action(LayoutRemoteField)); //resize the remoteField to match the potentially new camera resolution/size
+
             Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
-
-            //the remote field should always be 90% of the displayed frame
-            remoteField.Height = (int)(_srcFrame.Height * 0.90);
-            remoteField.Width = (int)(_srcFrame.Width * 0.90);
-            //remoteField.Left = frameDisplay.Left + (int)((_srcFrame.Width-remoteField.Width)/2);
-
             _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
             _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
-            _stateVar.cameraCalibration.VertFOV = 33.836;
-            _stateVar.cameraCalibration.HoriFOV = 56.068;
-
+            _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded values
+            _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded values
 
             return true;
         }
@@ -229,9 +237,9 @@ namespace Tracking
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !frameDisplay.IsHandleCreated) { continue; }
                     _srcFrame.CopyTo(_processedFrame);
 
-                    
+
                     if (_trackingMode == true)
-                    { 
+                    {
                         trackInFrame();
                         _stateVar.ActiveTargets = _detections.ToImmutableList(); //update the state variable
                     }
@@ -335,21 +343,24 @@ namespace Tracking
         private void stateMachine()
         {
             SerialCommand serialData;
-            _ardConnected = true; //for debug
+            // _ardConnected = true; //for debug
             while (_stateOperate == true)
             {
                 Thread.Sleep(100);
                 //state swap
-                if (_currState == TurrState.Inactive){
+                if (_currState == TurrState.Inactive)
+                {
                     Console.WriteLine("state : inactive");
                     if (_ardConnected == true) { _currState = TurrState.Idle; }
                     else { _currState = TurrState.Inactive; }
                 }
-                else if (_currState == TurrState.Idle){
+                else if (_currState == TurrState.Idle)
+                {
                     Console.WriteLine("state : idle");
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.ActiveTargets.IsEmpty == false) { 
+                    else if (_stateVar.ActiveTargets.IsEmpty == false)
+                    {
 
                         _currState = TurrState.Track;
                     }
@@ -358,22 +369,26 @@ namespace Tracking
                 {
                     Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
-                    else if(_trackingMode == false || _alive == false){ _currState = TurrState.Idle;}
+                    else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.targetLost(_stateVar.currDetId) == true) {
-                        if(_stateVar.debounce == false){
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == true)
+                    {
+                        if (_stateVar.debounce == false)
+                        {
                             Console.WriteLine("Target Loss Debounce triggered");
                             StateProcessing.StartDebounce(ref _stateVar);
                         }
-                        else if(_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.trackDebounceLimMS){
+                        else if (_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.trackDebounceLimMS)
+                        {
                             Console.WriteLine("target ID " + _stateVar.currDetId + " lost, debouncing released");
-                            StateProcessing.StopDebounce(ref _stateVar);                           
-                            _stateVar.timer.Reset(); 
-                            _stateVar.timer.Start();  
-                            _currState = TurrState.Search; 
+                            StateProcessing.StopDebounce(ref _stateVar);
+                            _stateVar.timer.Reset();
+                            _stateVar.timer.Start();
+                            _currState = TurrState.Search;
                         }
                     }
-                    else if(_stateVar.debounce == true){
+                    else if (_stateVar.debounce == true)
+                    {
                         Console.WriteLine("Debounce released");
                         StateProcessing.StopDebounce(ref _stateVar);
                     }
@@ -383,36 +398,42 @@ namespace Tracking
                 {
                     Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
-                    else if(_trackingMode == false || _alive == false){ _currState = TurrState.Idle;}
+                    else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if(_stateVar.targetLost(_stateVar.currDetId) == false && _stateVar.timer.Elapsed.TotalSeconds < 4){
-                        if(_stateVar.debounce == false){
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == false && _stateVar.timer.Elapsed.TotalSeconds < 4)
+                    {
+                        if (_stateVar.debounce == false)
+                        {
                             Console.WriteLine("Target Reacquisition Debounce triggered");
                             StateProcessing.StartDebounce(ref _stateVar);
                         }
-                        else if(_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.searchDebounceLimMS){
+                        else if (_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.searchDebounceLimMS)
+                        {
                             //rebuild our trackcycle and reacquire its index
                             Console.WriteLine("Found lost ID " + _stateVar.currDetId);
                             StateProcessing.StopDebounce(ref _stateVar);
                             _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                            StateProcessing.resetTrackcycle(ref _stateVar, _stateVar.trackCycle.FindIndex(x=> x == _stateVar.currDetId));
-                            _currState = TurrState.Track;   
+                            StateProcessing.resetTrackcycle(ref _stateVar, _stateVar.trackCycle.FindIndex(x => x == _stateVar.currDetId));
+                            _currState = TurrState.Track;
                         }
                     }
-                    else if(_stateVar.debounce == true &&  _stateVar.timer.Elapsed.TotalSeconds < 4){
+                    else if (_stateVar.debounce == true && _stateVar.timer.Elapsed.TotalSeconds < 4)
+                    {
                         Console.WriteLine("Debounce released");
                         StateProcessing.StopDebounce(ref _stateVar);
                     }
-                    else if(_stateVar.targetLost(_stateVar.currDetId) == true &&  _stateVar.timer.Elapsed.TotalSeconds > 4){
-                        if(_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == true && _stateVar.timer.Elapsed.TotalSeconds > 4)
+                    {
+                        if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
                         else
                         {
                             StateProcessing.AdvanceNextValidIDX(ref _stateVar);
-                            _currState = TurrState.Track;  
+                            _currState = TurrState.Track;
                         }
                     }
                 }
-                else if (_currState == TurrState.Remote){
+                else if (_currState == TurrState.Remote)
+                {
                     Console.WriteLine("state : remote");
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
@@ -424,13 +445,15 @@ namespace Tracking
                 /// stateevents are events that are guaranteed to occur within a state if the conditions are met
 
 
-                if(_currState == TurrState.Track)
-                { 
-                    if(_stateVar.debounce == false && _stateVar.timer.Elapsed.TotalSeconds > 4){
-                       Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
+                if (_currState == TurrState.Track)
+                {
+                    if (_stateVar.debounce == false && _stateVar.timer.Elapsed.TotalSeconds > 4)
+                    {
+                        Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
                         StateProcessing.AdvanceNextValidIDX(ref _stateVar);
                     }
-                    else if(_stateVar.trackCycle.Count == 0){
+                    else if (_stateVar.trackCycle.Count == 0)
+                    {
                         Console.WriteLine("empty trackcycle, rebuilding");
                         _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
                         StateProcessing.resetTrackcycle(ref _stateVar, 0);
@@ -442,9 +465,6 @@ namespace Tracking
 
 
         }
-
-
-
 
 
     }
