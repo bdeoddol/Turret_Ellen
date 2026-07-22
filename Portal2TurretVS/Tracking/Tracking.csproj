@@ -45,6 +45,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory> 
       <!--copies the file path to the bin folder as part of the build such that it exists alongside the output exe file-->
     </None>
+    <None Include="assets\*.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>

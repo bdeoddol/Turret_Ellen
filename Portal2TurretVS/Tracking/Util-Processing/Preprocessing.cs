@@ -1,3 +1,4 @@
+using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using System.Runtime.InteropServices;
@@ -24,6 +25,25 @@ public class Preprocessing
         for (int i = 0; i < dims; i++){retArray[i] = blobbed_frame.Size(i);}
 
         return retArray;
+    }
+
+    public static void performWarmupInferencing(ref InferenceSession inferenceModel)
+    {
+         Mat sampleFrame;
+        float[] sampleSrc;
+        long[] sampleShape;
+        string[] samplePaths = {
+            Path.Combine(AppContext.BaseDirectory, "assets", "imrs-magazine1024x1024.jpg"),
+            Path.Combine(AppContext.BaseDirectory, "assets", "sampleimg960x540.jpg"),
+            Path.Combine(AppContext.BaseDirectory, "assets", "800x608.jpg")
+            };
+        foreach(string val in samplePaths)
+        {
+            sampleFrame = Cv2.ImRead(val);
+            sampleSrc = Preprocessing.prepareSrc(sampleFrame);
+            sampleShape = Preprocessing.prepareShape(sampleFrame);
+            using var sampleOuput = Postprocessing.infer(sampleSrc, sampleShape, ref inferenceModel);
+            }
     }
 
     public static Rect GetRectOfOriginalFrame(Mat frame)

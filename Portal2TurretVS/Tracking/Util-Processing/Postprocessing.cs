@@ -6,7 +6,7 @@ using OpenCvSharp.Flann;
 
 public class Postprocessing
 {
-    public static IDisposableReadOnlyCollection<OrtValue> infer(float[] src, long[] shape, InferenceSession model)
+    public static IDisposableReadOnlyCollection<OrtValue> infer(float[] src, long[] shape, ref InferenceSession model)
     {
         using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(src, shape); //OrtValue
         using var runOptions = new RunOptions(); //RunOptions
@@ -18,7 +18,7 @@ public class Postprocessing
         IDisposableReadOnlyCollection<OrtValue>  output = model.Run(runOptions, inputs, model.OutputNames);
         return output;
     }
-     public static List<Detection> parseOutputData(IDisposableReadOnlyCollection<OrtValue> data)
+     public static List<Detection> parseOutputData(ref IDisposableReadOnlyCollection<OrtValue> data)
     {
         using var data_0 = data[0]; //OrtValue
         ReadOnlySpan<float> dataSpan = data_0.GetTensorDataAsSpan<float>();

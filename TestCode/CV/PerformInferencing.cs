@@ -41,8 +41,9 @@ class PerformInferencing
         int aDHeight = ImgResizev1.AlignDown(frame.Height)*32;
         if(ImgResizev1.ValidateImgDim(frame) == false)
         {
-            ImgResizev1.performResize(frame, aUWidth, frame.Height*(aUWidth/frame.Width));
             ImgResizev1.performPaddingVert(frame,aUHeight);
+            ImgResizev1.performResize(frame, aUWidth, frame.Height*(aUWidth/frame.Width));
+            
         }
 
         float[] src = PreprocessingTest.prepareSource(frame);

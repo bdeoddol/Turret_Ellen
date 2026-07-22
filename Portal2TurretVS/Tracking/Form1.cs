@@ -111,6 +111,13 @@ namespace Tracking
             }   // fallback and use CPU    
 
 
+            if(_currModel != null)
+            {
+                Preprocessing.performWarmupInferencing(ref _currModel);
+            }
+            
+
+
             PortDropDown.DataSource = SerialPort.GetPortNames();
             BaudDropDown.DataSource = _baudRates;
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
@@ -206,7 +213,7 @@ namespace Tracking
         {
             while (_alive == true)
             {
-                Thread.Sleep(25);
+                Thread.Sleep(50);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _captures == null || !_captures.IsOpened() || !frameDisplay.IsHandleCreated) { continue; }
@@ -231,7 +238,7 @@ namespace Tracking
             _totalRuntime.Start();
             while (_alive == true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(100);
                 if (_running == true)
                 {
                     if (_srcFrame == null || _srcFrame.Empty() || _captures == null || !_captures.IsOpened() || !frameDisplay.IsHandleCreated) { continue; }
@@ -300,9 +307,9 @@ namespace Tracking
             if (Preprocessing.ValidateImgDim(_processedFrame) == false)
             {
                 int aUWidth = Preprocessing.AlignUp(_processedFrame.Width) * 32;
-                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;
-                Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
+                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;                
                 Preprocessing.performPaddingVert(_processedFrame, aUHeight);
+                Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
                 resized = true;
             }
             src = Preprocessing.prepareSrc(_processedFrame);
@@ -311,9 +318,9 @@ namespace Tracking
 
             if (_currModel != null)
             {
-                using IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, _currModel); //infer here
+                IDisposableReadOnlyCollection<OrtValue> sampleOutput = Postprocessing.infer(src, shape, ref _currModel); //infer here
                 ///////////////////////////Postprocessing ////////////////////////////////
-                _detections.AddRange(Postprocessing.parseOutputData(sampleOutput));
+                _detections.AddRange(Postprocessing.parseOutputData(ref sampleOutput));
                 if (_trackingSession != null)
                 {
                     //prepare detections for BYTETrack
@@ -335,6 +342,7 @@ namespace Tracking
                     Preprocessing.performResize(_processedFrame, origWidth, origHeight);
                     resized = false;
                 }
+                sampleOutput.Dispose();
             }
 
             return;
@@ -346,7 +354,7 @@ namespace Tracking
             // _ardConnected = true; //for debug
             while (_stateOperate == true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(200);
                 //state swap
                 if (_currState == TurrState.Inactive)
                 {
