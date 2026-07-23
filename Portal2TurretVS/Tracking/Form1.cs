@@ -74,6 +74,7 @@ namespace Tracking
 
         //Remote Control Variables
         private bool _remoteControl;
+        private bool _remoteFieldEngaged;
 
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
@@ -111,11 +112,11 @@ namespace Tracking
             }   // fallback and use CPU    
 
 
-            if(_currModel != null)
+            if (_currModel != null)
             {
                 Preprocessing.performWarmupInferencing(ref _currModel);
             }
-            
+
 
 
             PortDropDown.DataSource = SerialPort.GetPortNames();
@@ -131,7 +132,7 @@ namespace Tracking
             _stateThread.Start();
         }
 
-        
+
 
         private void Form1_Closed(object? sender, EventArgs e)
         {
@@ -171,6 +172,7 @@ namespace Tracking
             if (_stateThread != null) { _stateThread.Join(500); }
             if (_captureThread != null) { _captureThread?.Join(500); }
             if (_streamThread != null) { _streamThread?.Join(500); }
+
         }
 
         //function to be called upon every camera connection
@@ -190,15 +192,17 @@ namespace Tracking
              */
             _captures.Read(_srcFrame); //capture a sample frame for calibration data
             frameDisplay.BeginInvoke(new Action(swapFrames)); //swap into frameDisplay
-            BeginInvoke(new Action(LayoutRemoteField)); //resize the remoteField to match the potentially new camera resolution/size
+            BeginInvoke(new Action(() => LayoutRemoteField(0.8))); //resize the remoteField (0.8 the size of the captured srcframe) to match the potentially new camera resolution/size
+                                                                   //note that this also updates the cameracalibration remoteFieldCenter variable to match the new camera resolution/size
 
             Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
+
             _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
             _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
-            _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded values
-            _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded values
+            _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded value
+            _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded value
 
             return true;
         }
@@ -267,7 +271,7 @@ namespace Tracking
                             }
                         }
                         // marshals the frame swapping to the UI thread, ensuring thread safety when updating the PictureBox control
-                        //we delegate the tasks within swapFrames to a UI thread instead of direct access via this worker thread.
+                        //we delegate the tasks within swapFrames to a UI thread (main thread) instead of direct access via this worker thread.
                         frameDisplay.BeginInvoke(new Action(swapFrames)); //https://stackoverflow.com/questions/229554/whats-the-difference-between-invoke-and-begininvoke
                     }
                 }
@@ -307,7 +311,7 @@ namespace Tracking
             if (Preprocessing.ValidateImgDim(_processedFrame) == false)
             {
                 int aUWidth = Preprocessing.AlignUp(_processedFrame.Width) * 32;
-                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;                
+                int aUHeight = Preprocessing.AlignUp(_processedFrame.Height) * 32;
                 Preprocessing.performPaddingVert(_processedFrame, aUHeight);
                 Preprocessing.performResize(_processedFrame, aUWidth, aUHeight);
                 resized = true;
@@ -348,26 +352,28 @@ namespace Tracking
             return;
         }
 
-        private void stateMachine()
+        private void stateMachine() //TODO: convert to event driven state as opposed to polling
         {
-            SerialCommand serialData;
+            // SerialCommand serialData;
             // _ardConnected = true; //for debug
-            int pollRate = 350;
+            int pollRate = 250;
             while (_stateOperate == true)
             {
                 Thread.Sleep(pollRate);
                 //state swap
                 if (_currState == TurrState.Inactive)
                 {
-                    pollRate = 1000;
                     Console.WriteLine("state : inactive");
+                    pollRate = 1000;
+
                     if (_ardConnected == true) { _currState = TurrState.Idle; }
                     else { _currState = TurrState.Inactive; }
                 }
                 else if (_currState == TurrState.Idle)
                 {
-                    pollRate = 200;
                     Console.WriteLine("state : idle");
+                    pollRate = 200;
+
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
                     else if (_stateVar.ActiveTargets.IsEmpty == false)
@@ -378,8 +384,9 @@ namespace Tracking
                 }
                 else if (_currState == TurrState.Track)
                 {
-                    pollRate = 75;
                     Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
+                    pollRate = 75;
+
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
@@ -408,8 +415,9 @@ namespace Tracking
                 }
                 else if (_currState == TurrState.Search)
                 {
-                    pollRate = 100;
                     Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
+                    pollRate = 100;
+
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
@@ -449,9 +457,10 @@ namespace Tracking
                 {
                     Console.WriteLine("state : remote");
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
-                    else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    //else if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
-                    //else if (_stateVar.ActiveTargets.IsEmpty == false) { _currState = TurrState.Track; }
+                    else if (_remoteControl == false) {
+                        if(_stateVar.ActiveTargets.IsEmpty == true){ _currState = TurrState.Idle;}
+                        else {_currState = TurrState.Track;}
+                    }
                 }
 
                 ///////////////////internal stateevents//////////////////////

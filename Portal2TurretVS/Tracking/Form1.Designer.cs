@@ -183,11 +183,13 @@
             // 
             remoteField.Anchor = AnchorStyles.None;
             remoteField.BackColor = SystemColors.MenuHighlight;
+            remoteField.Cursor = Cursors.Cross;
             remoteField.Location = new Point(294, 76);
             remoteField.Name = "remoteField";
             remoteField.Size = new Size(681, 513);
             remoteField.TabIndex = 13;
             remoteField.Click += remoteField_Click;
+            remoteField.MouseMove += remoteField_MouseMove;
             // 
             // RmNableBut
             // 
@@ -231,11 +233,13 @@
             Controls.Add(DisableTrack);
             Controls.Add(frameDisplay);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            KeyPreview = true;
             MinimumSize = new Size(904, 568);
             Name = "Form1";
             Text = "Form1";
             TopMost = true;
             Load += Form1_Load;
+            KeyDown += Form1_KeyDown;
             ((System.ComponentModel.ISupportInitialize)frameDisplay).EndInit();
             ResumeLayout(false);
             PerformLayout();

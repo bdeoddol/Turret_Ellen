@@ -173,22 +173,26 @@ namespace Tracking
 
         private void frameDisplay_Resize(object sender, EventArgs e)
         {
-            BeginInvoke(new Action(LayoutRemoteField));
+            BeginInvoke(new Action(()=>LayoutRemoteField(0.8)));
             // Schedule the layout update on the UI thread, occurs asynchronously after the resize event is processed to prevent blocking and incomplete 
             // layout  calculations during the resize event. This ensures that the layout is updated correctly after the control (frameDisplay) has been resized.
         }
 
-        private void LayoutRemoteField()
+        private void LayoutRemoteField(double sizeFactor)
         {
             System.Drawing.Size imgRect = GetDisplayedImageSize(frameDisplay);
             if (imgRect == System.Drawing.Size.Empty) return;
 
-            remoteField.Width = (int)(imgRect.Width * 0.8);
-            remoteField.Height = (int)(imgRect.Height * 0.8);
+            // we want the remoteField to be 0.80% the size of the displayed imge and centered within it
+            remoteField.Width = (int)(imgRect.Width * sizeFactor);
+            remoteField.Height = (int)(imgRect.Height * sizeFactor);
 
             remoteField.Left = frameDisplay.Left + ((frameDisplay.ClientSize.Width-imgRect.Width)/2) + ((imgRect.Width - remoteField.Width) / 2);
             remoteField.Top = frameDisplay.Top + ((frameDisplay.ClientSize.Height - imgRect.Height)/2) + ((imgRect.Height - remoteField.Height) / 2);
             //https://stackoverflow.com/questions/23659647/how-to-get-displayed-image-dimensions-of-an-image-scaled-to-fit-a-picturebox#comment36342004_23659815
+
+
+
         }
 
 
@@ -219,13 +223,6 @@ namespace Tracking
             return result;
         }
 
-        private void remoteField_Click(object sender, EventArgs e)
-        { 
-        
-        
-        
-        }
-
         private void RmDsblBut_Click(object sender, EventArgs e)
         {
             UpdateRemoteStatus(false);
@@ -245,6 +242,9 @@ namespace Tracking
                 RmNableBut.Visible = false;
                 RmDsblBut.Enabled = false;
                 RmDsblBut.Visible = false;
+                _remoteFieldEngaged = false;
+                remoteField.Enabled = false;
+                remoteField.Visible = false;
                 return;
             }
             _remoteControl = status;
@@ -252,7 +252,48 @@ namespace Tracking
             RmNableBut.Visible = !status;
             RmDsblBut.Enabled = status;
             RmDsblBut.Visible = status;
+            _remoteFieldEngaged = false;
+            remoteField.Enabled = status;
+            remoteField.Visible = status;
             return;
+        }
+        /* Why do we need a remoteThread to update our cursor and etc when polling?
+         * 
+         * The _streamThread delegates the swapFrame function to the UI thread (main thread) which ensures the task is thread safe,
+         * a separate worker thread on it's own should not update the picturebox via swapFrame because it is considered unsafe behavior.
+         * We call frameDisplay.BeginInvoke(new Action(swapFrames); which delegates the task to the UI thread. This is called asynchronously in a queue, so the UI thread will process it
+         * when it is able to.
+         * This is important because if we were to call swapFrames directly from the _streamThread, it would cause a cross-thread operation exception.
+         * BUT, if I enter the remotefield_click loop on the UI thread, the thread is stuck until it _remoteFieldEngaged is disengaged 
+         * to begin executing the the swapFrame function asynchronously
+         * Moreover, to disengage without a seperate _remoteThread, the ESC key must be pressed and detected, however because the UI thread is stuck in the loop 
+         * so it can never detect the disengage in
+         * Form1_KeyDown.
+         
+         */
+        private void remoteField_Click(object sender, EventArgs e)
+        {
+
+            _remoteFieldEngaged = true;
+        }
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (_remoteFieldEngaged == false) { return; }
+            else if (_remoteFieldEngaged == true && e.KeyCode == Keys.Escape)
+            {
+                _remoteFieldEngaged = false;
+                return;
+            }
+        }
+
+        private void remoteField_MouseMove(object sender, MouseEventArgs e)
+        {
+            if(_remoteFieldEngaged == true)
+            {
+                Cursor.Position = PointToScreen(new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)));
+            }
+            
         }
 
 
