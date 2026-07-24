@@ -19,7 +19,7 @@ class OpenPort
         try
         {
             _serialPort = new SerialPort(portName);
-            // _serialPort.BaudRate = 9600;
+            _serialPort.BaudRate = 9600;
 
             _serialPort.Open();
             Console.WriteLine("i'm working");
@@ -29,7 +29,7 @@ class OpenPort
             Console.WriteLine("nope");
         }
 
-        // _serialPort.WriteLine("hi testing");
+        _serialPort.WriteLine("hi");
         _serialPort.Close();
         
     }

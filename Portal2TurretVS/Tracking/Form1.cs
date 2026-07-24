@@ -239,7 +239,8 @@ namespace Tracking
 
         private void Stream()
         {
-            _totalRuntime.Start();
+            _totalRuntime.Restart();
+            _frameCnt = 0;
             while (_alive == true)
             {
                 Thread.Sleep(100);
