@@ -1,5 +1,13 @@
 #include "Util.h"
 
+
+
+SerialCommand::SerialCommand(int dX, int dY){
+  tilt = dY;
+  pan = dX;
+}
+
+
 void readSerialLine(char* charString, int arrSize){
   char byte;
   int idx = 0;
@@ -17,3 +25,13 @@ void readSerialLine(char* charString, int arrSize){
 
   charString[idx] = '\0';
 }
+
+void parseSerialCommand(String data){
+ // should be in format XXXX:YYYY
+}
+
+void parseState(String serialLine){
+
+}
+
+
