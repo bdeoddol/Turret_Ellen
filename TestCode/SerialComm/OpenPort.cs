@@ -27,10 +27,12 @@ class OpenPort
         catch
         {
             Console.WriteLine("nope");
+            return;
         }
 
         _serialPort.WriteLine("hi");
         _serialPort.Close();
-        
+
+        return;
     }
 }
