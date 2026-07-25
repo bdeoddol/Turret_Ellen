@@ -30,7 +30,7 @@ class OpenPort
             return;
         }
 
-        _serialPort.WriteLine("hi");
+        _serialPort.WriteLine("hi"); //note that c# strings are not null terminated
         _serialPort.Close();
 
         return;
