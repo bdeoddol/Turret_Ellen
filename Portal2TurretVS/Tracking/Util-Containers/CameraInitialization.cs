@@ -27,10 +27,11 @@ public class CameraCalib //holds our camera calibrations
     public double HoriFOV{get;set;}
 
     //these are derived variables determined by initializing variables
-    public OpenCvSharp.Point _imgCenter => new OpenCvSharp.Point(imgFrameW/2, imgFrameW/2); //updates our camera settings when we connect to the camera
+    public OpenCvSharp.Point _imgCenter => new OpenCvSharp.Point(imgFrameW/2, imgFrameH/2); //updates our camera settings when we connect to the camera
     public int HoriPixelPerDegree => (int)(imgFrameW/HoriFOV);
     public int VertPixelPerDegree => (int)(imgFrameH/VertFOV);
-
+    public double HoriDegreePerPixel => HoriFOV/imgFrameW;
+    public double VertDegreePerPixel => VertFOV/imgFrameH;
 
 
 }

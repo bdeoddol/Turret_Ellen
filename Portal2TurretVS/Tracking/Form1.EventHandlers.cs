@@ -101,10 +101,10 @@ namespace Tracking
             _captureThread = new Thread(new ThreadStart(grabFrame));
             _streamThread = new Thread(new ThreadStart(Stream));
 
-            //after testing, aavg fps was  reported as 7
-            //desired max time lost is decided to be 5 seconds, calculated ast maxtimelost(fps) = (fps/30)*track buffer
+            //after testing, aavg fps was  reported as 5
+            //desired max time lost is decided to be 5 seconds, calculated as  maxtimelost(fps) = (fps/30)*track buffer
             //track buffer here is calculated to be 150
-            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 7, 150, (float)0.5, (float)0.5, (float)0.6);
+            _trackingSession = new BYTETracker(Postprocessing.ObjToSTrack, 5, 150, (float)0.6, (float)0.7, (float)0.65);
             _totalRuntime.Reset();
             _frameCnt = 0;
 

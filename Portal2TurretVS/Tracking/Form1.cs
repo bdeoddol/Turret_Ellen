@@ -3,6 +3,7 @@ using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using OpenCvSharp.Extensions;
+using OpenCvSharp.ImgHash;
 using System;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
@@ -55,7 +56,7 @@ namespace Tracking
         private bool _fpsEnable = true;
         private Stopwatch _totalRuntime = new Stopwatch();
         private int _frameCnt = 0;
-        private double _elapsedSeconds => _totalRuntime.Elapsed.Seconds;
+        private double _elapsedSeconds => _totalRuntime.Elapsed.TotalSeconds;
         private double _fpsVal => _frameCnt / _elapsedSeconds;
         string? _fpsDisplay;
 
@@ -355,7 +356,8 @@ namespace Tracking
 
         private void stateMachine() //TODO: convert to event driven state as opposed to polling
         {
-            // SerialCommand serialData;
+            SerialCommand serialData;
+            Detection placeholder;
             // _ardConnected = true; //for debug
             int pollRate = 250;
             while (_stateOperate == true)
@@ -387,6 +389,7 @@ namespace Tracking
                 {
                     Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     pollRate = 75;
+                    _stateVar.centered = false;
 
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
@@ -418,6 +421,7 @@ namespace Tracking
                 {
                     Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     pollRate = 100;
+                    _stateVar.centered = false;
 
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
@@ -467,8 +471,16 @@ namespace Tracking
                 ///////////////////internal stateevents//////////////////////
                 /// stateevents are events that are guaranteed to occur within a state if the conditions are met
 
-
-                if (_currState == TurrState.Track)
+                if(_currState == TurrState.Idle)
+                {
+                    if(_stateVar.centered == false)
+                    {
+                        serialData = CameraProcessing.Center();
+                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.pan + " x " + serialData.tilt);
+                        _stateVar.centered = true;
+                    }
+                }
+                else if (_currState == TurrState.Track)
                 {
                     if (_stateVar.debounce == false && _stateVar.timer.Elapsed.TotalSeconds > 4)
                     {
@@ -481,6 +493,21 @@ namespace Tracking
                         _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
                         StateProcessing.resetTrackcycle(ref _stateVar, 0);
                     }
+
+                    if(_stateVar.currDet != null)
+                    {
+                        placeholder = _stateVar.currDet;
+                        OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
+                        Console.WriteLine("-----------------------------------------------------------");
+                        Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
+                        Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
+                        serialData = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
+                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.pan + " x " + serialData.tilt);
+                    }
+                }
+                else if(_currState == TurrState.Search)
+                {
+                    
                 }
 
 

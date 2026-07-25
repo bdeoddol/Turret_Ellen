@@ -79,12 +79,13 @@ public class Postprocessing
 
         // List<Detection> outputData = filterByConfidence(filterByClass(output, 0),0.5);
         filterByClassOPT(ref output, 0);
-        filterByConfidenceOPT(ref output, 0.25);
+        // filterByConfidenceOPT(ref output, 0.25);
 
         // List<Detection> outputData = filterByClass(output, 0);
         float x1, y1, x2, y2, cfd, cls;
         int width, height;
-        int ConfAsPercent, detID;
+        int detID;
+        double ConfAsPercent;
         OpenCvSharp.Point center;
         for(int det = 0; det < output.Count; det++)
         {
@@ -96,7 +97,7 @@ public class Postprocessing
             y2 = output[det].y2;
             cfd = output[det].conf;
             cls = output[det].classID;
-            ConfAsPercent = (int)(cfd*100);
+            ConfAsPercent = (double)(cfd*100);
             detID = output[det].detID;
             
             width = output[det].width;
@@ -112,7 +113,7 @@ public class Postprocessing
         return;
     }
 
-    private static void plotSingularHelper(int x1, int y1, int width, int height, OpenCvSharp.Point center, int ConfPercent, int detID, Mat frame)
+    private static void plotSingularHelper(int x1, int y1, int width, int height, OpenCvSharp.Point center, double ConfPercent, int detID, Mat frame)
     {
         OpenCvSharp.Rect boundingBox = new OpenCvSharp.Rect(x1, y1, width, height); //construct our bounding box
         Scalar color = new Scalar(4, 28, 255); //construct w/ bgr values for bright red
@@ -121,7 +122,7 @@ public class Postprocessing
         //draw our boxes
         Cv2.Rectangle(frame, boundingBox, color, 2, LineTypes.Link8, 0);
         Cv2.Circle(frame, center, 2, color, 2);
-        Cv2.PutText(frame, "Person " + detID +  ": "  + ConfPercent + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
+        Cv2.PutText(frame, "Person " + detID +  ": "  + $"{ConfPercent:F2}" + "%", upLeft, HersheyFonts.HersheyDuplex, 0.5, color, 2); //TODO implement to change fonts
 
         return;
     }

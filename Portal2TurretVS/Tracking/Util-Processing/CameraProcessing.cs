@@ -8,6 +8,7 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
         return retCommand;
     }
 
+    //calculate the tilt and pan degrees required to move relative to the image center
     public static SerialCommand calcBoxTravel(CameraCalib calibrations, OpenCvSharp.Point boxCenter)
     {
         //calculate the pixel differences
@@ -15,9 +16,9 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
         int vertPDelta = calibrations._imgCenter.Y - boxCenter.Y;
 
         //given 5 pixel rise, given 15 pixels per degree, 
-        int tiltDegrees = horiPDelta/calibrations.HoriPixelPerDegree;
-        int panDegrees = vertPDelta/calibrations.VertPixelPerDegree;
-        SerialCommand retCommand = new SerialCommand(panDegrees, tiltDegrees);
+        double tiltDegrees = horiPDelta*calibrations.HoriDegreePerPixel;
+        double panDegrees = vertPDelta*calibrations.VertDegreePerPixel;
+        SerialCommand retCommand = new SerialCommand((int)Math.Round(panDegrees), (int)Math.Round(tiltDegrees));
 
         return retCommand;
     }
