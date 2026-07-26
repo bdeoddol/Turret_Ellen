@@ -60,6 +60,7 @@ namespace Tracking
                 _serialPort = new SerialPort(_selectedPort);
                 _serialPort.BaudRate = _selectedBaud;
                 _serialPort.Open();
+                Console.WriteLine("port connected @ " + _selectedPort + "x" + _selectedBaud );
             }
             catch
             {

@@ -471,13 +471,21 @@ namespace Tracking
                 ///////////////////internal stateevents//////////////////////
                 /// stateevents are events that are guaranteed to occur within a state if the conditions are met
 
+
                 if(_currState == TurrState.Idle)
                 {
                     if(_stateVar.centered == false)
                     {
                         serialData = CameraProcessing.Center();
-                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.pan + " x " + serialData.tilt);
+                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.getString());
                         _stateVar.centered = true;
+                    }
+                    try{_serialPort?.WriteLine("Idle");}                
+                    catch{
+                        _serialPort?.Close();
+                        _ardConnected = false;
+                        UpdateArduinoStatus(false);
+                        UpdateRemoteStatus(false);
                     }
                 }
                 else if (_currState == TurrState.Track)
@@ -498,17 +506,42 @@ namespace Tracking
                     {
                         placeholder = _stateVar.currDet;
                         OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
+                        serialData = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
                         Console.WriteLine("-----------------------------------------------------------");
                         Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
                         Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
-                        serialData = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
-                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.pan + " x " + serialData.tilt);
+                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.getString());
+                        try{_serialPort?.WriteLine("Tracking");}                
+                        catch{
+                            _serialPort?.Close();
+                            _ardConnected = false;
+                            UpdateArduinoStatus(false);
+                            UpdateRemoteStatus(false);
+                        }
                     }
                 }
                 else if(_currState == TurrState.Search)
                 {
-                    
+                    try{_serialPort?.WriteLine("Searching");}                
+                    catch{
+                        _serialPort?.Close();
+                        _ardConnected = false;
+                        UpdateArduinoStatus(false);
+                        UpdateRemoteStatus(false);
+                    }
                 }
+                else if(_currState == TurrState.Remote)
+                {
+                    try{_serialPort?.WriteLine("Remote");}                
+                    catch{
+                        _serialPort?.Close();
+                        _ardConnected = false;
+                        UpdateArduinoStatus(false);
+                        UpdateRemoteStatus(false);
+                    }
+                }
+
+
 
 
             }

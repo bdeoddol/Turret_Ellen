@@ -13,6 +13,10 @@ public class SerialCommand //payload class (this is what we will be using to hol
 
     }
 
+    public string getString()
+    {
+        return pan + "x" + tilt;
+    }
     public int pan{get;set;}
     public int tilt{get;set;}
     public bool centered{get;set;}
