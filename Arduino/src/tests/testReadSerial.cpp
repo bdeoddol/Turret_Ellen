@@ -1,17 +1,19 @@
-#include "Scripts.h"
-#include "Util.h"
+#include <Arduino.h>
+#include "Util.h" //apparently you need to place the header/cpp files into a folder of the same name
 
-void verifySerialTransmissionSetUp(){
+char commandStream[50];
+String buff;
+
+void setup() {
+  // put your setup code here, to run once:
     Serial.begin(9600);
     pinMode(8, OUTPUT);
     pinMode(7, OUTPUT);
 }
-void verifySerialTransmissionLoop(){
-    char commandStream[50];
-    String buff;
 
-
-    if(Serial.available() > 0){
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(Serial.available() > 0){
     digitalWrite(8, HIGH);
     digitalWrite(7, HIGH);
     delay(500);
@@ -19,7 +21,7 @@ void verifySerialTransmissionLoop(){
     readSerialLine(commandStream, 50);
     buff = commandStream;
     
-    if(buff == "hello world"){
+    if(buff == "Idle"){
       digitalWrite(8, HIGH);
       digitalWrite(7, LOW);
       delay(500);
@@ -34,4 +36,7 @@ void verifySerialTransmissionLoop(){
 
   digitalWrite(8, LOW);
   digitalWrite(7,LOW);
+  delay(500);
 }
+
+
