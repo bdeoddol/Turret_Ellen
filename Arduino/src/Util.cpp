@@ -1,9 +1,6 @@
 #include "Util.h"
 
-SerialCommand::SerialCommand(int dX, int dY){
-  tilt = dY;
-  pan = dX;
-}
+
 
 
 void readSerialLine(char* charString, int arrSize){ 
@@ -28,14 +25,6 @@ void readSerialLine(char* charString, int arrSize){
   charString[idx] = '\0';
 }
 
-
-
-void processByte(byte dataByte){
-  if (dataByte == '\n'){
-
-  }
-}
-
 void parseSerialCommand(String data){
  // should be in format XXXX:YYYY
 }
@@ -43,5 +32,51 @@ void parseSerialCommand(String data){
 void parseState(String serialLine){
 
 }
+
+SerialCommand::SerialCommand(int dX, int dY){
+  tilt = dY;
+  pan = dX;
+}
+
+SerialBuffer::SerialBuffer(){
+  idx =  0;
+  stringMsg = "";
+}
+
+const String& SerialBuffer::getString() const{
+  return stringMsg;
+}
+
+void SerialBuffer::clearString(){
+  stringMsg = "";
+  return;
+}
+
+bool SerialBuffer::appendChar(char byte, int bufferSize){
+  if(idx < bufferSize - 1){
+    charBuffer[idx] = byte; 
+    idx++;
+    if(byte == '\0'){idx = 0; stringMsg = charBuffer; return true;}
+  }
+  else{charBuffer[bufferSize-1] = '\0'; idx = 0; return false;}
+
+  return false;
+}
+
+
+bool processByte(byte dataByte, SerialBuffer& bufferClass){
+
+  if(dataByte == '\r'){
+    return false;
+  }
+  else if(dataByte == '\n'){
+    return bufferClass.appendChar('\0', 50);
+  }
+  else{
+    return bufferClass.appendChar(dataByte, 50);
+  }
+}
+
+
 
 
