@@ -12,12 +12,25 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
     public static SerialCommand calcBoxTravel(CameraCalib calibrations, OpenCvSharp.Point boxCenter)
     {
         //calculate the pixel differences
-        int horiPDelta = boxCenter.X - calibrations._imgCenter.X;
-        int vertPDelta = calibrations._imgCenter.Y - boxCenter.Y;
+        int horiPixelDelta = boxCenter.X - calibrations._imgCenter.X;
+        int vertPixelDelta = calibrations._imgCenter.Y - boxCenter.Y;
 
         //given 5 pixel rise, given 15 pixels per degree, 
-        double tiltDegrees = horiPDelta*calibrations.HoriDegreePerPixel;
-        double panDegrees = vertPDelta*calibrations.VertDegreePerPixel;
+        double tiltDegrees = horiPixelDelta*calibrations.HoriDegreePerPixel;
+        double panDegrees = vertPixelDelta*calibrations.VertDegreePerPixel;
+        SerialCommand retCommand = new SerialCommand((int)Math.Round(panDegrees), (int)Math.Round(tiltDegrees));
+
+        return retCommand;
+    }
+
+    //same math as above, but generalized to two points, location of the reference point, and the location of the mouse cursor (any point rlly)
+    public static SerialCommand calcCursorTravel(CameraCalib calibrations, OpenCvSharp.Point refPoint, OpenCvSharp.Point cursorPoint)
+    {
+        int horiPixelDelta = refPoint.X - cursorPoint.X;
+        int vertPixelDelta = cursorPoint.Y - refPoint.X;
+
+        double tiltDegrees = horiPixelDelta*calibrations.HoriDegreePerPixel;
+        double panDegrees = vertPixelDelta*calibrations.VertDegreePerPixel;
         SerialCommand retCommand = new SerialCommand((int)Math.Round(panDegrees), (int)Math.Round(tiltDegrees));
 
         return retCommand;

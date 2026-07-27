@@ -13,6 +13,7 @@ public class StateVar
         timer = new Stopwatch();
         debounceTimer = new Stopwatch(); 
         cameraCalibration = new CameraCalib();
+        serialPayload = new SerialCommand();
         centered = false;
         trackDebounceLimMS = 1500;
         searchDebounceLimMS = 1000;
@@ -37,12 +38,17 @@ public class StateVar
     public double trackDebounceLimMS{get;}
     public double searchDebounceLimMS{get;}
     public bool debounce{get;set;}
+
+
     public Detection? currDet => ActiveTargets.Find(x => x.detID == currDetId);
     public int cycleCurrIdx;
     public int currDetId => trackCycle[cycleCurrIdx];
 
+
     public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations
     public bool centered{get;set;}
+    public SerialCommand serialPayload{get;set;}
+
 
 
 

@@ -76,6 +76,7 @@ namespace Tracking
         //Remote Control Variables
         private bool _remoteControl;
         private bool _remoteFieldEngaged;
+        private bool _centeredCursor; 
 
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
@@ -208,8 +209,20 @@ namespace Tracking
             return true;
         }
 
-
-
+        private void WriteToPort(string msg)
+        {
+            if(_serialPort != null)
+            {
+                try{_serialPort.WriteLine(msg);}                
+                catch{
+                    MessageBox.Show("Serial transmission failed, disconnecting serialport..");
+                    _serialPort?.Close();
+                    UpdateArduinoStatus(false);
+                    UpdateRemoteStatus(false);
+                }
+            }
+            else{Console.WriteLine("Writing to port failed, silent error"); return;}
+        }
 
         ///////////////////////////Threads///////////////////////////
         /// 
@@ -356,7 +369,6 @@ namespace Tracking
 
         private void stateMachine() //TODO: convert to event driven state as opposed to polling
         {
-            SerialCommand serialData;
             Detection placeholder;
             // _ardConnected = true; //for debug
             int pollRate = 250;
@@ -379,11 +391,7 @@ namespace Tracking
 
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.ActiveTargets.IsEmpty == false)
-                    {
-
-                        _currState = TurrState.Track;
-                    }
+                    else if (_stateVar.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
                 }
                 else if (_currState == TurrState.Track)
                 {
@@ -419,6 +427,7 @@ namespace Tracking
                 }
                 else if (_currState == TurrState.Search)
                 {
+                    Console.WriteLine("-----------------------------------------------------------");
                     Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     pollRate = 100;
                     _stateVar.centered = false;
@@ -476,17 +485,11 @@ namespace Tracking
                 {
                     if(_stateVar.centered == false)
                     {
-                        serialData = CameraProcessing.Center();
-                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.getString());
+                        _stateVar.serialPayload = CameraProcessing.Center();
+                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
                         _stateVar.centered = true;
                     }
-                    try{_serialPort?.WriteLine("Idle");}                
-                    catch{
-                        _serialPort?.Close();
-                        _ardConnected = false;
-                        UpdateArduinoStatus(false);
-                        UpdateRemoteStatus(false);
-                    }
+                    WriteToPort("Idle");
                 }
                 else if (_currState == TurrState.Track)
                 {
@@ -506,48 +509,30 @@ namespace Tracking
                     {
                         placeholder = _stateVar.currDet;
                         OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
-                        serialData = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
-                        Console.WriteLine("-----------------------------------------------------------");
                         Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
                         Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
-                        Console.WriteLine("Computed Tilt/Pan serial data: " + serialData.getString());
-                        try{_serialPort?.WriteLine("Tracking");}                
-                        catch{
-                            _serialPort?.Close();
-                            _ardConnected = false;
-                            UpdateArduinoStatus(false);
-                            UpdateRemoteStatus(false);
-                        }
+
+                        _stateVar.serialPayload = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
+                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                        WriteToPort("Tracking");
                     }
                 }
                 else if(_currState == TurrState.Search)
                 {
-                    try{_serialPort?.WriteLine("Searching");}                
-                    catch{
-                        _serialPort?.Close();
-                        _ardConnected = false;
-                        UpdateArduinoStatus(false);
-                        UpdateRemoteStatus(false);
-                    }
+                    WriteToPort("Searching");
                 }
                 else if(_currState == TurrState.Remote)
                 {
-                    try{_serialPort?.WriteLine("Remote");}                
-                    catch{
-                        _serialPort?.Close();
-                        _ardConnected = false;
-                        UpdateArduinoStatus(false);
-                        UpdateRemoteStatus(false);
-                    }
+                    // Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                    WriteToPort("Remote");
                 }
-
-
-
 
             }
 
 
         }
+
+
 
 
     }

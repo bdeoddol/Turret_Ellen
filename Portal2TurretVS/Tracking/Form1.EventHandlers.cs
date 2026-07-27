@@ -28,7 +28,8 @@ namespace Tracking
 
         private void ConnectArduino_Click(object sender, EventArgs e)
         { 
-            SerialPortConnect();
+            bool success = SerialPortConnect();
+            UpdateArduinoStatus(success);
             UpdateRemoteStatus(false);
             return;
         }
@@ -36,11 +37,8 @@ namespace Tracking
         private void DisconnectArduino_Click(object sender, EventArgs e)
         {
             _serialPort?.Close();
-            _ardConnected = false;
             UpdateArduinoStatus(false);
             UpdateRemoteStatus(false);
-
-
         }
         private void UpdateArduinoStatus(bool status)
         {
@@ -50,7 +48,7 @@ namespace Tracking
             DisconnectArduino.Enabled = status;
             DisconnectArduino.Visible = status;
         }
-        private void SerialPortConnect()
+        private bool SerialPortConnect()
         {
 
             _selectedPort = PortDropDown.SelectedItem as string;
@@ -65,12 +63,9 @@ namespace Tracking
             catch
             {
                 MessageBox.Show("Failed connected to Arduino! Please check your settings and connection.");
-                UpdateArduinoStatus(false);
-                return;
+                return false;
             }
-            UpdateArduinoStatus(true);
-
-            return;
+            return true;
         }
 
         private void StartStream_Click(object sender, EventArgs e) //toggle
@@ -276,6 +271,9 @@ namespace Tracking
         {
 
             _remoteFieldEngaged = true;
+            // System.Drawing.Point remoteFieldCenter = new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2));
+            // Cursor.Position = PointToScreen(remoteFieldCenter);
+            // _centeredCursor = true;
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -290,10 +288,11 @@ namespace Tracking
 
         private void remoteField_MouseMove(object sender, MouseEventArgs e)
         {
-            if(_remoteFieldEngaged == true)
-            {
-                Cursor.Position = PointToScreen(new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)));
-            }
+            // if(_remoteFieldEngaged == true)
+            // {
+            //     //recenter
+            //     Cursor.Position = PointToScreen(new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)));
+            // }
             
         }
 
