@@ -30,7 +30,13 @@ class OpenPort
             return;
         }
 
-        _serialPort.WriteLine("Remote"); //note that c# strings are not null terminated
+        _serialPort.WriteLine("Idle");
+        Thread.Sleep(500);
+        _serialPort.WriteLine("Tracking"); //note that c# strings are not null terminated
+        Thread.Sleep(500);
+        _serialPort.WriteLine("Searching");
+        Thread.Sleep(500);
+        _serialPort.WriteLine("Remote");
         // _serialPort.WriteLine("hello world");
         _serialPort.Close();
 
