@@ -267,11 +267,10 @@ namespace Tracking
                     if (_trackingMode == true)
                     {
                         trackInFrame();
-                        _stateVar.ActiveTargets = _detections.ToImmutableList(); //update the state variable
-                    }
-                    else
-                    {
-                        _stateVar.ActiveTargets = _stateVar.ActiveTargets.Clear();
+                        if(_trackingMode == true)
+                        {
+                            _stateVar.ActiveTargets = _detections.ToImmutableList(); //update the state variable                            
+                        }
                     }
                     if (frameDisplay.InvokeRequired == true && !frameDisplay.IsDisposed) //required as per https://www.visioforge.com/help/docs/dotnet/general/code-samples/draw-video-picturebox/
                     {
@@ -391,10 +390,11 @@ namespace Tracking
 
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.ActiveTargets.IsEmpty == false){_currState = TurrState.Track;}
+                    else if (_stateVar.NoActiveTargets() == false){_currState = TurrState.Track;}
                 }
                 else if (_currState == TurrState.Track)
                 {
+                    Console.WriteLine("--------------------------------------------");
                     Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
                     pollRate = 75;
                     _stateVar.centered = false;
@@ -409,7 +409,7 @@ namespace Tracking
                             Console.WriteLine("Target Loss Debounce triggered");
                             StateProcessing.StartDebounce(ref _stateVar);
                         }
-                        else if (_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.trackDebounceLimMS)
+                        else if (_stateVar.ElapsedMS() > _stateVar.trackDebounceLimMS)
                         {
                             Console.WriteLine("target ID " + _stateVar.currDetId + " lost, debouncing released");
                             StateProcessing.StopDebounce(ref _stateVar);
@@ -423,7 +423,7 @@ namespace Tracking
                         Console.WriteLine("Debounce released");
                         StateProcessing.StopDebounce(ref _stateVar);
                     }
-                    else if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                    else if (_stateVar.NoActiveTargets() == true) { _currState = TurrState.Idle; }
                 }
                 else if (_currState == TurrState.Search)
                 {
@@ -435,31 +435,31 @@ namespace Tracking
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_trackingMode == false || _alive == false) { _currState = TurrState.Idle; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.targetLost(_stateVar.currDetId) == false && _stateVar.timer.Elapsed.TotalSeconds < 4)
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == false && _stateVar.ElapsedS() < 4)
                     {
                         if (_stateVar.debounce == false)
                         {
                             Console.WriteLine("Target Reacquisition Debounce triggered");
                             StateProcessing.StartDebounce(ref _stateVar);
                         }
-                        else if (_stateVar.debounceTimer.Elapsed.TotalMilliseconds > _stateVar.searchDebounceLimMS)
+                        else if (_stateVar.ElapsedMS() > _stateVar.searchDebounceLimMS)
                         {
                             //rebuild our trackcycle and reacquire its index
                             Console.WriteLine("Found lost ID " + _stateVar.currDetId);
                             StateProcessing.StopDebounce(ref _stateVar);
                             _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
-                            StateProcessing.resetTrackcycle(ref _stateVar, _stateVar.trackCycle.FindIndex(x => x == _stateVar.currDetId));
+                            StateProcessing.resetTrackcycle(ref _stateVar, _stateVar.FindTrackIdx(_stateVar.currDetId));
                             _currState = TurrState.Track;
                         }
                     }
-                    else if (_stateVar.debounce == true && _stateVar.timer.Elapsed.TotalSeconds < 4)
+                    else if (_stateVar.debounce == true && _stateVar.ElapsedS() < 4)
                     {
                         Console.WriteLine("Debounce released");
                         StateProcessing.StopDebounce(ref _stateVar);
                     }
-                    else if (_stateVar.targetLost(_stateVar.currDetId) == true && _stateVar.timer.Elapsed.TotalSeconds > 4)
+                    else if (_stateVar.targetLost(_stateVar.currDetId) == true && _stateVar.ElapsedS() > 4)
                     {
-                        if (_stateVar.ActiveTargets.IsEmpty == true) { _currState = TurrState.Idle; }
+                        if (_stateVar.NoActiveTargets() == true) { _currState = TurrState.Idle; }
                         else
                         {
                             StateProcessing.AdvanceNextValidIDX(ref _stateVar);
@@ -472,7 +472,7 @@ namespace Tracking
                     Console.WriteLine("state : remote");
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == false) {
-                        if(_stateVar.ActiveTargets.IsEmpty == true){ _currState = TurrState.Idle;}
+                        if(_stateVar.NoActiveTargets() == true){ _currState = TurrState.Idle;}
                         else {_currState = TurrState.Track;}
                     }
                 }
@@ -489,18 +489,24 @@ namespace Tracking
                         Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
                         _stateVar.centered = true;
                     }
+                    else
+                    {
+                        _stateVar.serialPayload = CameraProcessing.Stop();
+                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                    }
                     WriteToPort("Idle");
                 }
                 else if (_currState == TurrState.Track)
                 {
-                    if (_stateVar.debounce == false && _stateVar.timer.Elapsed.TotalSeconds > 4)
+                    Console.WriteLine("--------------------------------------------");
+                    if (_stateVar.debounce == false && _stateVar.ElapsedS() > 4)
                     {
-                        Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
+                        // Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
                         StateProcessing.AdvanceNextValidIDX(ref _stateVar);
                     }
                     else if (_stateVar.trackCycle.Count == 0)
                     {
-                        Console.WriteLine("empty trackcycle, rebuilding");
+                        // Console.WriteLine("empty trackcycle, rebuilding");
                         _stateVar.trackCycle = StateProcessing.RebuildTrackCycle(_stateVar.ActiveTargets.ToList()); //rebuild trackcycle
                         StateProcessing.resetTrackcycle(ref _stateVar, 0);
                     }
@@ -508,17 +514,25 @@ namespace Tracking
                     if(_stateVar.currDet != null)
                     {
                         placeholder = _stateVar.currDet;
-                        OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
-                        Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
-                        Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
+                        // OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
+                        // Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
+                        // Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
 
                         _stateVar.serialPayload = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
                         Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
-                        WriteToPort("Tracking");
+                        
                     }
+                    else
+                    {
+                        _stateVar.serialPayload = CameraProcessing.Stop();
+                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                    }
+                    WriteToPort("Tracking");
                 }
                 else if(_currState == TurrState.Search)
                 {
+                    _stateVar.serialPayload = CameraProcessing.Sweep();
+                    Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
                     WriteToPort("Searching");
                 }
                 else if(_currState == TurrState.Remote)

@@ -156,7 +156,10 @@ namespace Tracking
         { UpdateTrackStatus(true); }
 
         private void DisableTrack_Click(object sender, EventArgs e)
-        { UpdateTrackStatus(false); }
+        { 
+            UpdateTrackStatus(false);
+            _stateVar.ClearActiveDet();
+        }
 
         private void UpdateTrackStatus(bool status)
         {
