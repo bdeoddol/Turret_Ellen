@@ -76,8 +76,8 @@ namespace Tracking
         //Remote Control Variables
         private bool _remoteControl;
         private bool _remoteFieldEngaged;
-        private bool _centeredCursor; 
-
+        private System.Drawing.Point _cursorPosition => Cursor.Position;
+        private System.Drawing.Point _remoteFieldCenter => remoteField.PointToScreen(new System.Drawing.Point(remoteField.Width / 2, remoteField.Height / 2));
         ///////////////////////////setup and teardown///////////////////////////
         public Form1()
         {
@@ -197,7 +197,7 @@ namespace Tracking
             BeginInvoke(new Action(() => LayoutRemoteField(0.8))); //resize the remoteField (0.8 the size of the captured srcframe) to match the potentially new camera resolution/size
                                                                    //note that this also updates the cameracalibration remoteFieldCenter variable to match the new camera resolution/size
 
-            Console.WriteLine("Connected Camera set to " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
+            Console.WriteLine("Connected Camera set to WxH " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
 
@@ -537,8 +537,9 @@ namespace Tracking
                 }
                 else if(_currState == TurrState.Remote)
                 {
-                    // Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                    Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
                     WriteToPort("Remote");
+                    _stateVar.serialPayload = CameraProcessing.Stop();
                 }
 
             }

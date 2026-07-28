@@ -32,6 +32,10 @@ public class CameraCalib //holds our camera calibrations
     public int VertPixelPerDegree => (int)(imgFrameH/VertFOV);
     public double HoriDegreePerPixel => HoriFOV/imgFrameW;
     public double VertDegreePerPixel => VertFOV/imgFrameH;
+    public Tuple<double, double> HxVRemoteMultiplier => new Tuple<double, double>(0.53*HoriPixelPerDegree, 0.53*VertPixelPerDegree);  
+    public Tuple<int,int> HxVPixelPerDegree => new Tuple<int, int>((int)(imgFrameW/HoriFOV), (int)(imgFrameH/VertFOV));
+    public Tuple<double,double> HxVDegreePerPixel => new Tuple<double, double>( HoriFOV/imgFrameW, VertFOV/imgFrameH);
+    
 
 
 }
