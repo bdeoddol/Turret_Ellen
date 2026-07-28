@@ -1,9 +1,15 @@
 #include <Arduino.h>
 class SerialCommand{
     public: 
-    SerialCommand(int dX, int dY);
+    SerialCommand(char cmd, int dX, int dY);
+    SerialCommand();
+    int getPan() const;
+    int getTilt() const;
+    char getCmdAsChar() const;
+    private:
     int tilt;
     int pan;
+    char SerCmd;
 
 
 };
@@ -22,7 +28,7 @@ class SerialBuffer{
 
 void readSerialLine(char* charString, int arrSize);
 
-void parseSerialData(String data);
+SerialCommand parseSerialData(String data);
 
 void parseState(String serialLine);
 

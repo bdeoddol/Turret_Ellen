@@ -197,7 +197,7 @@ namespace Tracking
             BeginInvoke(new Action(() => LayoutRemoteField(0.8))); //resize the remoteField (0.8 the size of the captured srcframe) to match the potentially new camera resolution/size
                                                                    //note that this also updates the cameracalibration remoteFieldCenter variable to match the new camera resolution/size
 
-            Console.WriteLine("Connected Camera set to WxH " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
+            Console.WriteLine("Connected Camera set to WxH: " + _srcFrame.Width + "x" + _srcFrame.Height + " resolution");
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
 
@@ -388,7 +388,7 @@ namespace Tracking
                     Console.WriteLine("state : idle");
                     pollRate = 200;
 
-                    if (_ardConnected == false) { _currState = TurrState.Inactive; }
+                    if (_ardConnected == false) { _stateVar.centered = false; _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
                     else if (_stateVar.NoActiveTargets() == false){_currState = TurrState.Track;}
                 }
@@ -486,15 +486,15 @@ namespace Tracking
                     if(_stateVar.centered == false)
                     {
                         _stateVar.serialPayload = CameraProcessing.Center();
-                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                        Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                         _stateVar.centered = true;
                     }
                     else
                     {
                         _stateVar.serialPayload = CameraProcessing.Stop();
-                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                        Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                     }
-                    WriteToPort("Idle");
+                    WriteToPort(_stateVar.serialPayload.getString());
                 }
                 else if (_currState == TurrState.Track)
                 {
@@ -519,26 +519,26 @@ namespace Tracking
                         // Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
 
                         _stateVar.serialPayload = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
-                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                        Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                         
                     }
                     else
                     {
                         _stateVar.serialPayload = CameraProcessing.Stop();
-                        Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
+                        Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                     }
-                    WriteToPort("Tracking");
+                    WriteToPort(_stateVar.serialPayload.getString());
                 }
                 else if(_currState == TurrState.Search)
                 {
                     _stateVar.serialPayload = CameraProcessing.Sweep();
-                    Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
-                    WriteToPort("Searching");
+                    Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
+                    WriteToPort(_stateVar.serialPayload.getString());
                 }
                 else if(_currState == TurrState.Remote)
                 {
-                    Console.WriteLine("Computed PanxTilt serial data: " + _stateVar.serialPayload.getString());
-                    WriteToPort("Remote");
+                    Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
+                        WriteToPort(_stateVar.serialPayload.getString());
                     _stateVar.serialPayload = CameraProcessing.Stop();
                 }
 

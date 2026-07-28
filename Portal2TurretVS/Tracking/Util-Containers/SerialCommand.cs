@@ -3,27 +3,27 @@ public class SerialCommand //payload class (this is what we will be using to hol
 
     /*
     There will be 3 Commands represented in bytes
-    CENTER = 0x03;
-    STOP = 0x06;
-    SWEEP = 0x09;
-    MOVE = 0x0C[pan][tilt];
+    CENTER = C;
+    STOP = N;
+    SWEEP = S;
+    MOVE = M:[pan]x[tilt];
 
     */
 
     public SerialCommand()
     {
-        cmd = 0x00;
+        cmd = '0';
         pan = 0;
         tilt = 0;
     }
-    public SerialCommand(byte Cmd)
+    public SerialCommand(char Cmd)
     {
         cmd = Cmd;
         pan = 0;
         tilt = 0;
     }
 
-    public SerialCommand(byte Cmd, int panDegrees, int tiltDegrees)
+    public SerialCommand(char Cmd, int panDegrees, int tiltDegrees)
     {
         cmd = Cmd;
         pan = panDegrees;
@@ -37,7 +37,7 @@ public class SerialCommand //payload class (this is what we will be using to hol
 
     private int pan{get;}
     private int tilt{get;}
-    private byte cmd{get;}
+    private char cmd{get;}
     // public bool centered{get;set;}
     
 }
