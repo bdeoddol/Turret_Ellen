@@ -5,6 +5,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+Arduino/.vscode
 
 
 ## Ignore Visual Studio temporary files, build results, and
