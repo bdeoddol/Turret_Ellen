@@ -7,9 +7,9 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
     {
         return new SerialCommand('C');
     }
-    public static SerialCommand Stop()
+    public static SerialCommand Pause()
     {
-        return new SerialCommand('N');
+        return new SerialCommand('P');
     }
     public static SerialCommand Sweep()
     {

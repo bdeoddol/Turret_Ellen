@@ -470,6 +470,7 @@ namespace Tracking
                 else if (_currState == TurrState.Remote)
                 {
                     Console.WriteLine("state : remote");
+                    pollRate = 30;
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
                     else if (_remoteControl == false) {
                         if(_stateVar.NoActiveTargets() == true){ _currState = TurrState.Idle;}
@@ -491,14 +492,13 @@ namespace Tracking
                     }
                     else
                     {
-                        _stateVar.serialPayload = CameraProcessing.Stop();
+                        _stateVar.serialPayload = CameraProcessing.Pause();
                         Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                     }
                     WriteToPort(_stateVar.serialPayload.getString());
                 }
                 else if (_currState == TurrState.Track)
                 {
-                    Console.WriteLine("--------------------------------------------");
                     if (_stateVar.debounce == false && _stateVar.ElapsedS() > 4)
                     {
                         // Console.WriteLine("tracking subject expired, swapping to next idx from idx: " + _stateVar.cycleCurrIdx);
@@ -524,7 +524,7 @@ namespace Tracking
                     }
                     else
                     {
-                        _stateVar.serialPayload = CameraProcessing.Stop();
+                        _stateVar.serialPayload = CameraProcessing.Pause();
                         Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                     }
                     WriteToPort(_stateVar.serialPayload.getString());
@@ -539,7 +539,7 @@ namespace Tracking
                 {
                     Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                         WriteToPort(_stateVar.serialPayload.getString());
-                    _stateVar.serialPayload = CameraProcessing.Stop();
+                    _stateVar.serialPayload = CameraProcessing.Pause();
                 }
 
             }
