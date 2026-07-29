@@ -4,26 +4,25 @@
 #include "SerialTurr.h"
 //apparently you need to place the header/cpp files into a folder of the same name
 
-Servo panServo;
-Servo tiltServo;
+Servo servo1;
+Servo servo2;
 Servo servo3;
 SerialBuffer serBuff;
 SerialCommand Cmd;
-SerialTurrState servoState;
 void setup()
 {
   Serial.begin(9600);
+  DDRB |= 0x80;
+  DDRB |= 0x40;
+  DDRB |= 0x20;
+  
+  servo1.attach(7);
+  servo2.attach(6);
+  servo3.attach(5);
 
-  panServo.attach(7);
-  tiltServo.attach(6);
-
-  servoState.panPos = 120;
-  servoState.tiltPos = 39;
-  servoState.sens = 5;
-
-  panServo.write(servoState.panPos);
-  tiltServo.write(servoState.tiltPos);
-
+  servo1.write(90);
+  servo2.write(90);
+  servo3.write(180);
   
 }
 
@@ -34,11 +33,8 @@ void loop()
     if(processByte(Serial.read(), serBuff) == true){ //process 1 byte in the serial buffer, return true if a string has been completed
       Cmd = parseSerialData(serBuff.getString()); //parse the completed string, copy the returned contents member by member 
       if(Cmd.getCmdAsChar() == 'C'){ 
-        panServo.write(90);
-        tiltServo.write(90);
-
-        servoState.panPos = 90;
-        servoState.tiltPos = 90;
+        servo1.write(90);
+        servo2.write(90);
       }
       else if(Cmd.getCmdAsChar() == 'P'){
 
@@ -46,16 +42,11 @@ void loop()
       else if(Cmd.getCmdAsChar() == 'S'){
 
       }
-      else if (Cmd.getCmdAsChar() == 'M') {
-        servoState.panPos = constrain(servoState.panPos + (int)(Cmd.getPan() * servoState.sens),0, 180);
+      else if (Cmd.getCmdAsChar() == 'M'){
 
-        servoState.tiltPos = constrain(servoState.tiltPos + (int)(Cmd.getTilt() * servoState.sens),0, 180);
-
-        panServo.write(servoState.panPos);
-        tiltServo.write(servoState.tiltPos);
       }
-    
+      serBuff.clearString(); //clear the processed string 
     }
-   }
+  }
 
 }

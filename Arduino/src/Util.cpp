@@ -1,8 +1,5 @@
 #include "Util.h"
 
-
-
-
 void readSerialLine(char* charString, int arrSize){ 
   //this loop uses Serial.Read() in a loop to build the incoming serial data. It is not error-proof and thus not used
   char byte;
@@ -25,18 +22,6 @@ void readSerialLine(char* charString, int arrSize){
   charString[idx] = '\0';
 }
 
-void parseSerialCommand(String data){
- // should be in format XXXX:YYYY
-}
-
-void parseState(String serialLine){
-
-}
-
-SerialCommand::SerialCommand(int dX, int dY){
-  tilt = dY;
-  pan = dX;
-}
 
 SerialBuffer::SerialBuffer(){
   idx =  0;

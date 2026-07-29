@@ -50,6 +50,13 @@ public class StateVar
     public SerialCommand serialPayload{get;set;}
 
 
+    public bool NoActiveTargets() => ActiveTargets.IsEmpty;
+    public double ElapsedMS() => debounceTimer.Elapsed.TotalMilliseconds;
+    public double ElapsedS() => timer.Elapsed.TotalSeconds;
+    public void ClearActiveDet(){ActiveTargets = ActiveTargets.Clear();}
+    public int FindTrackIdx(int DetID){return trackCycle.FindIndex(x => x == DetID);}
+
+
 
 
 }

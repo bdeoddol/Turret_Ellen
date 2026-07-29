@@ -156,7 +156,10 @@ namespace Tracking
         { UpdateTrackStatus(true); }
 
         private void DisableTrack_Click(object sender, EventArgs e)
-        { UpdateTrackStatus(false); }
+        { 
+            UpdateTrackStatus(false);
+            _stateVar.ClearActiveDet();
+        }
 
         private void UpdateTrackStatus(bool status)
         {
@@ -268,12 +271,14 @@ namespace Tracking
          
          */
         private void remoteField_Click(object sender, EventArgs e)
-        {
+        {   //this point is derived relative to the client
+            // System.Drawing.Point remoteFieldCenter = new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)); 
+            // Cursor.Position = PointToScreen(remoteFieldCenter);
+
 
             _remoteFieldEngaged = true;
-            // System.Drawing.Point remoteFieldCenter = new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2));
-            // Cursor.Position = PointToScreen(remoteFieldCenter);
-            // _centeredCursor = true;
+            //this point is derived relative to the remotefield | remoteField.PointToScreen(new System.Drawing.Point(remoteField.Width / 2, remoteField.Height / 2))
+            Cursor.Position = _remoteFieldCenter;
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -288,11 +293,26 @@ namespace Tracking
 
         private void remoteField_MouseMove(object sender, MouseEventArgs e)
         {
-            // if(_remoteFieldEngaged == true)
-            // {
-            //     //recenter
-            //     Cursor.Position = PointToScreen(new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)));
-            // }
+            if(_remoteFieldEngaged == true)
+            {
+
+                if(Cursor.Position == _remoteFieldCenter) 
+                {
+                    //everytime we recenter, the OS fires a MouseMove event, we can avoid these events by checking if the cursor is at the center position again, then we'll know to ignore it
+                    return;
+                }
+                //otherwise, process
+                OpenCvSharp.Point remoteFieldCenterOPCV = new OpenCvSharp.Point(_remoteFieldCenter.X, _remoteFieldCenter.Y);
+                OpenCvSharp.Point cursorPosition = new OpenCvSharp.Point(Cursor.Position.X, Cursor.Position.Y);
+
+                // Console.WriteLine("Remote Field Center: " + remoteFieldCenterOPCV.X + "x" + remoteFieldCenterOPCV.Y);
+                // Console.WriteLine("Cursor Position: " + cursorPosition.X + "x" + cursorPosition.Y);
+
+                //update serial command
+                _stateVar.serialPayload =  CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);  
+                //recenter
+                Cursor.Position = _remoteFieldCenter;
+            }
             
         }
 
