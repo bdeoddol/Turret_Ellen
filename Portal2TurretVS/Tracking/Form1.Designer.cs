@@ -42,9 +42,9 @@
             TrackEnable = new Button();
             DisableTrack = new Button();
             DisconnectArduino = new Button();
-            remoteField = new Panel();
             RmNableBut = new Button();
             RmDsblBut = new Button();
+            remoteField = new Panel();
             ((System.ComponentModel.ISupportInitialize)frameDisplay).BeginInit();
             SuspendLayout();
             // 
@@ -69,6 +69,8 @@
             frameDisplay.SizeMode = PictureBoxSizeMode.Zoom;
             frameDisplay.TabIndex = 1;
             frameDisplay.TabStop = false;
+            frameDisplay.Click += frameDisplay_Click;
+            frameDisplay.MouseMove += frameDisplay_MouseMove;
             frameDisplay.Resize += frameDisplay_Resize;
             // 
             // ConnectCamera
@@ -179,18 +181,6 @@
             DisconnectArduino.UseVisualStyleBackColor = true;
             DisconnectArduino.Click += DisconnectArduino_Click;
             // 
-            // remoteField
-            // 
-            remoteField.Anchor = AnchorStyles.None;
-            remoteField.BackColor = SystemColors.MenuHighlight;
-            remoteField.Cursor = Cursors.Cross;
-            remoteField.Location = new Point(294, 76);
-            remoteField.Name = "remoteField";
-            remoteField.Size = new Size(681, 513);
-            remoteField.TabIndex = 13;
-            remoteField.Click += remoteField_Click;
-            remoteField.MouseMove += remoteField_MouseMove;
-            // 
             // RmNableBut
             // 
             RmNableBut.Location = new Point(12, 623);
@@ -210,6 +200,18 @@
             RmDsblBut.Text = "Disable Remote";
             RmDsblBut.UseVisualStyleBackColor = true;
             RmDsblBut.Click += RmDsblBut_Click;
+            // 
+            // remoteField
+            // 
+            remoteField.Anchor = AnchorStyles.None;
+            remoteField.BackColor = SystemColors.MenuHighlight;
+            remoteField.Cursor = Cursors.Cross;
+            remoteField.Location = new Point(294, 76);
+            remoteField.Name = "remoteField";
+            remoteField.Size = new Size(681, 513);
+            remoteField.TabIndex = 13;
+            remoteField.Click += remoteField_Click;
+            remoteField.MouseMove += remoteField_MouseMove;
             // 
             // Form1
             // 
@@ -261,8 +263,8 @@
         private Button TrackEnable;
         private Button DisableTrack;
         private Button DisconnectArduino;
-        private Panel remoteField;
         private Button RmNableBut;
         private Button RmDsblBut;
+        private Panel remoteField;
     }
 }

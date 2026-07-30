@@ -211,17 +211,18 @@ namespace Tracking
 
         private void WriteToPort(string msg)
         {
-            if(_serialPort != null)
+            if (_serialPort != null)
             {
-                try{_serialPort.WriteLine(msg);}                
-                catch{
+                try { _serialPort.WriteLine(msg); }
+                catch
+                {
                     MessageBox.Show("Serial transmission failed, disconnecting serialport..");
                     _serialPort?.Close();
                     UpdateArduinoStatus(false);
                     UpdateRemoteStatus(false);
                 }
             }
-            else{Console.WriteLine("Writing to port failed, silent error"); return;}
+            else { Console.WriteLine("Writing to port failed, silent error"); return; }
         }
 
         ///////////////////////////Threads///////////////////////////
@@ -267,7 +268,7 @@ namespace Tracking
                     if (_trackingMode == true)
                     {
                         trackInFrame();
-                        if(_trackingMode == true)
+                        if (_trackingMode == true)
                         {
                             _stateVar.ActiveTargets = _detections.ToImmutableList(); //update the state variable                            
                         }
@@ -390,7 +391,7 @@ namespace Tracking
 
                     if (_ardConnected == false) { _stateVar.centered = false; _currState = TurrState.Inactive; }
                     else if (_remoteControl == true) { _currState = TurrState.Remote; }
-                    else if (_stateVar.NoActiveTargets() == false){_currState = TurrState.Track;}
+                    else if (_stateVar.NoActiveTargets() == false) { _currState = TurrState.Track; }
                 }
                 else if (_currState == TurrState.Track)
                 {
@@ -472,9 +473,10 @@ namespace Tracking
                     Console.WriteLine("state : remote");
                     pollRate = 30;
                     if (_ardConnected == false) { _currState = TurrState.Inactive; }
-                    else if (_remoteControl == false) {
-                        if(_stateVar.NoActiveTargets() == true){ _currState = TurrState.Idle;}
-                        else {_currState = TurrState.Track;}
+                    else if (_remoteControl == false)
+                    {
+                        if (_stateVar.NoActiveTargets() == true) { _currState = TurrState.Idle; }
+                        else { _currState = TurrState.Track; }
                     }
                 }
 
@@ -482,9 +484,9 @@ namespace Tracking
                 /// stateevents are events that are guaranteed to occur within a state if the conditions are met
 
 
-                if(_currState == TurrState.Idle)
+                if (_currState == TurrState.Idle)
                 {
-                    if(_stateVar.centered == false)
+                    if (_stateVar.centered == false)
                     {
                         _stateVar.serialPayload = CameraProcessing.Center();
                         Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
@@ -511,7 +513,7 @@ namespace Tracking
                         StateProcessing.resetTrackcycle(ref _stateVar, 0);
                     }
 
-                    if(_stateVar.currDet != null)
+                    if (_stateVar.currDet != null)
                     {
                         placeholder = _stateVar.currDet;
                         // OpenCvSharp.Point centerPt = _stateVar.cameraCalibration._imgCenter;
@@ -520,7 +522,7 @@ namespace Tracking
 
                         _stateVar.serialPayload = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
                         Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
-                        
+
                     }
                     else
                     {
@@ -529,16 +531,16 @@ namespace Tracking
                     }
                     WriteToPort(_stateVar.serialPayload.getString());
                 }
-                else if(_currState == TurrState.Search)
+                else if (_currState == TurrState.Search)
                 {
                     _stateVar.serialPayload = CameraProcessing.Sweep();
                     Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
                     WriteToPort(_stateVar.serialPayload.getString());
                 }
-                else if(_currState == TurrState.Remote)
+                else if (_currState == TurrState.Remote)
                 {
                     Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
-                        WriteToPort(_stateVar.serialPayload.getString());
+                    WriteToPort(_stateVar.serialPayload.getString());
                     _stateVar.serialPayload = CameraProcessing.Pause();
                 }
 
@@ -546,9 +548,5 @@ namespace Tracking
 
 
         }
-
-
-
-
     }
 }

@@ -74,6 +74,7 @@ namespace Tracking
             else
             {
                 frameDisplay.Show();
+                frameDisplay.Enabled = true;
                 _totalRuntime.Start();
                 _running = true;
             }
@@ -129,6 +130,8 @@ namespace Tracking
 
 
             frameDisplay.Hide();
+            frameDisplay.Enabled = false;
+            UpdateRemoteStatus(false);
             SetCameraButtonActive();
             return;
         }
@@ -172,13 +175,18 @@ namespace Tracking
 
         private void frameDisplay_Resize(object sender, EventArgs e)
         {
-            BeginInvoke(new Action(()=>LayoutRemoteField(0.8)));
+            //upon the frameDisplay resize, we need to realign the remote field
+
+            BeginInvoke(new Action(()=>LayoutRemoteField(0.08)));
             // Schedule the layout update on the UI thread, occurs asynchronously after the resize event is processed to prevent blocking and incomplete 
             // layout  calculations during the resize event. This ensures that the layout is updated correctly after the control (frameDisplay) has been resized.
         }
 
         private void LayoutRemoteField(double sizeFactor)
         {
+            //resize and recenter the remoteField
+
+
             System.Drawing.Size imgRect = GetDisplayedImageSize(frameDisplay);
             if (imgRect == System.Drawing.Size.Empty) return;
 
@@ -189,8 +197,6 @@ namespace Tracking
             remoteField.Left = frameDisplay.Left + ((frameDisplay.ClientSize.Width-imgRect.Width)/2) + ((imgRect.Width - remoteField.Width) / 2);
             remoteField.Top = frameDisplay.Top + ((frameDisplay.ClientSize.Height - imgRect.Height)/2) + ((imgRect.Height - remoteField.Height) / 2);
             //https://stackoverflow.com/questions/23659647/how-to-get-displayed-image-dimensions-of-an-image-scaled-to-fit-a-picturebox#comment36342004_23659815
-
-
 
         }
 
@@ -252,26 +258,13 @@ namespace Tracking
             RmDsblBut.Enabled = status;
             RmDsblBut.Visible = status;
             _remoteFieldEngaged = false;
-            remoteField.Enabled = status;
-            remoteField.Visible = status;
+            remoteField.Enabled = false; //for debug
+            remoteField.Visible = false; //for debug
             return;
         }
-        /* Why do we need a remoteThread to update our cursor and etc when polling?
-         * 
-         * The _streamThread delegates the swapFrame function to the UI thread (main thread) which ensures the task is thread safe,
-         * a separate worker thread on it's own should not update the picturebox via swapFrame because it is considered unsafe behavior.
-         * We call frameDisplay.BeginInvoke(new Action(swapFrames); which delegates the task to the UI thread. This is called asynchronously in a queue, so the UI thread will process it
-         * when it is able to.
-         * This is important because if we were to call swapFrames directly from the _streamThread, it would cause a cross-thread operation exception.
-         * BUT, if I enter the remotefield_click loop on the UI thread, the thread is stuck until it _remoteFieldEngaged is disengaged 
-         * to begin executing the the swapFrame function asynchronously
-         * Moreover, to disengage without a seperate _remoteThread, the ESC key must be pressed and detected, however because the UI thread is stuck in the loop 
-         * so it can never detect the disengage in
-         * Form1_KeyDown.
-         
-         */
-        private void remoteField_Click(object sender, EventArgs e)
-        {   //this point is derived relative to the client
+
+        private void frameDisplay_Click(object sender, EventArgs e)
+        {
             // System.Drawing.Point remoteFieldCenter = new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)); 
             // Cursor.Position = PointToScreen(remoteFieldCenter);
 
@@ -291,12 +284,12 @@ namespace Tracking
             }
         }
 
-        private void remoteField_MouseMove(object sender, MouseEventArgs e)
+        private void frameDisplay_MouseMove(object sender, MouseEventArgs e)
         {
-            if(_remoteFieldEngaged == true)
+            if (_remoteFieldEngaged == true)
             {
 
-                if(Cursor.Position == _remoteFieldCenter) 
+                if (Cursor.Position == _remoteFieldCenter)
                 {
                     //everytime we recenter, the OS fires a MouseMove event, we can avoid these events by checking if the cursor is at the center position again, then we'll know to ignore it
                     return;
@@ -309,13 +302,68 @@ namespace Tracking
                 // Console.WriteLine("Cursor Position: " + cursorPosition.X + "x" + cursorPosition.Y);
 
                 //update serial command
-                _stateVar.serialPayload =  CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);  
+                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);
                 //recenter
                 Cursor.Position = _remoteFieldCenter;
             }
-            
+
+        }
+
+
+        /* Why do we need a remoteThread to update our cursor and etc when polling?
+         * 
+         * The _streamThread delegates the swapFrame function to the UI thread (main thread) which ensures the task is thread safe,
+         * a separate worker thread on it's own should not update the picturebox via swapFrame because it is considered unsafe behavior.
+         * We call frameDisplay.BeginInvoke(new Action(swapFrames); which delegates the task to the UI thread. This is called asynchronously in a queue, so the UI thread will process it
+         * when it is able to.
+         * This is important because if we were to call swapFrames directly from the _streamThread, it would cause a cross-thread operation exception.
+         * BUT, if I enter the remotefield_click polling loop on the UI thread, the thread is blocked until _remoteFieldEngaged == false is 
+         * to move on executing the the queued swapFrame function asynchronously
+         * Moreover, to disengage without a seperate _remoteThread, the ESC key must be pressed and detected,
+         * however because the UI thread is stuck in the polling loop 
+         * so it can never detect the disengage in
+         * Form1_KeyDown.
+
+         */
+        private void remoteField_Click(object sender, EventArgs e)
+        {   //this point is derived relative to the client
+            // System.Drawing.Point remoteFieldCenter = new System.Drawing.Point(remoteField.Location.X + (remoteField.Width / 2), remoteField.Location.Y + (remoteField.Height / 2)); 
+            // Cursor.Position = PointToScreen(remoteFieldCenter);
+
+
+            _remoteFieldEngaged = true;
+            //this point is derived relative to the remotefield | remoteField.PointToScreen(new System.Drawing.Point(remoteField.Width / 2, remoteField.Height / 2))
+            Cursor.Position = _remoteFieldCenter;
+        }
+
+        private void remoteField_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_remoteFieldEngaged == true)
+            {
+
+                if (Cursor.Position == _remoteFieldCenter)
+                {
+                    //everytime we recenter, the OS fires a MouseMove event, we can avoid these events by checking if the cursor is at the center position again, then we'll know to ignore it
+                    return;
+                }
+                //otherwise, process
+                OpenCvSharp.Point remoteFieldCenterOPCV = new OpenCvSharp.Point(_remoteFieldCenter.X, _remoteFieldCenter.Y);
+                OpenCvSharp.Point cursorPosition = new OpenCvSharp.Point(Cursor.Position.X, Cursor.Position.Y);
+
+                // Console.WriteLine("Remote Field Center: " + remoteFieldCenterOPCV.X + "x" + remoteFieldCenterOPCV.Y);
+                // Console.WriteLine("Cursor Position: " + cursorPosition.X + "x" + cursorPosition.Y);
+
+                //update serial command
+                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);
+                //recenter
+                Cursor.Position = _remoteFieldCenter;
+            }
+
         }
 
 
     }
+
+
 }
+
