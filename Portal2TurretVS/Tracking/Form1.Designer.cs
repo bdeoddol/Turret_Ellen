@@ -64,6 +64,7 @@
             // 
             frameDisplay.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             frameDisplay.BackColor = SystemColors.Control;
+            frameDisplay.Cursor = Cursors.Cross;
             frameDisplay.InitialImage = null;
             frameDisplay.Location = new Point(209, 12);
             frameDisplay.Name = "frameDisplay";
