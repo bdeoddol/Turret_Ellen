@@ -25,7 +25,7 @@ public class StateProcessing
     public static int FindRemainingValidIDX(ref StateVar statevariable)
     {
 
-        int startIdx = statevariable.cycleCurrIdx + 1;
+        int startIdx = statevariable.getCycleIdx + 1;
         int cycleCount = statevariable.trackCycle.Count;
         List<int> cycle = statevariable.trackCycle; //copy by reference
         int foundIdx = -1;
@@ -48,7 +48,7 @@ public class StateProcessing
     //reset the tracktimer and begin at a given index called "resetIdx"
     public static void resetTrackcycle(ref StateVar statevariable, int resetIdx)
     {
-        statevariable.cycleCurrIdx = resetIdx;
+        statevariable.setCycleIdx(resetIdx);
         statevariable.timer.Reset();
         statevariable.timer.Start();
     }
@@ -86,7 +86,7 @@ public class StateProcessing
         statevariable.timer.Reset();
         statevariable.debounceTimer.Reset();
         statevariable.debounce = false;
-        statevariable.cycleCurrIdx = 0;
+        statevariable.setCycleIdx(0);
         statevariable.centered = false;
 
     }

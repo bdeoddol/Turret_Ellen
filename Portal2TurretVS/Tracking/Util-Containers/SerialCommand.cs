@@ -53,6 +53,10 @@ public class SerialCommand //payload class (this is what we will be using to hol
     {
         return cmd + ":" + pan + "x" + tilt + "x" + gain;
     }
+    public int getPan() => pan;
+    public int getTilt() => tilt;
+    public int getGain() => gain;
+    public char getCmd() => cmd;
 
     private int pan{get;}
     private int tilt{get;}

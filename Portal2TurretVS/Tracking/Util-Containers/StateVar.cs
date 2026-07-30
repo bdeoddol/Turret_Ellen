@@ -33,17 +33,21 @@ public class StateVar
         //The cycle has been exhausted                                 //use this _stateVariable?._trackCycle.Last() == currvalue we are looking at
         //The cycle is empty                                          //use this _stateVariable._trackCycle.Count == 0
         //The current tracking detection is lost in active targets   //use this _stateVariable?.ActiveTargets.Exists(x => x.detID == [id value]);
+    public bool targetLost(int id) => !ActiveTargets.Exists(x => x.detID == id);
+    public Detection? currDet => ActiveTargets.Find(x => x.detID == currDetId);
+    public int currDetId => trackCycle[cycleCurrIdx];
+    public int getCycleIdx => cycleCurrIdx;
+    public void setCycleIdx(int value) => cycleCurrIdx = value;
+    private int cycleCurrIdx;
+
+
+
+
     public Stopwatch timer {get;} //utility
     public Stopwatch debounceTimer{get;}
-    public bool targetLost(int id) => !ActiveTargets.Exists(x => x.detID == id);
     public double trackDebounceLimMS{get;}
     public double searchDebounceLimMS{get;}
     public bool debounce{get;set;}
-
-
-    public Detection? currDet => ActiveTargets.Find(x => x.detID == currDetId);
-    public int cycleCurrIdx;
-    public int currDetId => trackCycle[cycleCurrIdx];
 
 
     public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations

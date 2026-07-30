@@ -210,9 +210,8 @@ namespace Tracking
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
 
 
+            //cameraFOVs are hardcoded values
             _stateVar.cameraCalibration = new CameraCalib(_srcFrame.Height, _srcFrame.Width, 33.836, 56.068);
-            // _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
-            // _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
             // _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded value
             // _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded value
 
@@ -406,7 +405,7 @@ namespace Tracking
                 else if (_currState == TurrState.Track)
                 {
                     Console.WriteLine("--------------------------------------------");
-                    Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
+                    Console.WriteLine("state : tracking detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.getCycleIdx);
                     pollRate = 75;
                     _stateVar.centered = false;
 
@@ -439,7 +438,7 @@ namespace Tracking
                 else if (_currState == TurrState.Search)
                 {
                     Console.WriteLine("-----------------------------------------------------------");
-                    Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.cycleCurrIdx);
+                    Console.WriteLine("state : searching for detID:" + _stateVar.currDetId + " at trackcycleidx " + _stateVar.getCycleIdx);
                     pollRate = 100;
                     _stateVar.centered = false;
 

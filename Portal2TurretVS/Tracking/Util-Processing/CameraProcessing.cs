@@ -37,9 +37,12 @@ public class CameraProcessing //class holding all pixel coordinate to degrees of
         int horiPixelDelta = cursorPoint.X - refPoint.X;
         int vertPixelDelta = refPoint.Y - cursorPoint.Y;
 
+        double HDegreePerPixel = stateVar.cameraCalibration.HoriDegreePerPixel;
+        double VDegreePerPixel = stateVar.cameraCalibration.VertDegreePerPixel;
+
         //a multiplier is necessary for remote control because if we read pixel deltas of at most 1 or -1, our pan/tilt degrees will be rounded to 0 due to our calibrations being too rough (56.068/400)
-        double panDegrees = horiPixelDelta*stateVar.cameraCalibration.HoriDegreePerPixel*stateVar.cameraCalibration.HxVRemoteMultiplier.Item1*stateVar.movementGain;
-        double tiltDegrees = vertPixelDelta*stateVar.cameraCalibration.VertDegreePerPixel*stateVar.cameraCalibration.HxVRemoteMultiplier.Item2*stateVar.movementGain;
+        double panDegrees = horiPixelDelta*HDegreePerPixel*stateVar.cameraCalibration.HxVRemoteMultiplier.Item1;
+        double tiltDegrees = vertPixelDelta*VDegreePerPixel*stateVar.cameraCalibration.HxVRemoteMultiplier.Item2;
         SerialCommand retCommand = new SerialCommand('M', (int)Math.Round(panDegrees), (int)Math.Round(tiltDegrees), stateVar.movementGain);
 
         return retCommand;
