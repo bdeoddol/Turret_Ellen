@@ -45,7 +45,9 @@
             RmNableBut = new Button();
             RmDsblBut = new Button();
             remoteField = new Panel();
+            numericUpDown1 = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)frameDisplay).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             SuspendLayout();
             // 
             // StartStream
@@ -155,7 +157,7 @@
             // 
             TrackEnable.Location = new Point(12, 594);
             TrackEnable.Name = "TrackEnable";
-            TrackEnable.Size = new Size(102, 23);
+            TrackEnable.Size = new Size(121, 23);
             TrackEnable.TabIndex = 10;
             TrackEnable.Text = "Enable Tracking";
             TrackEnable.UseVisualStyleBackColor = true;
@@ -165,7 +167,7 @@
             // 
             DisableTrack.Location = new Point(12, 594);
             DisableTrack.Name = "DisableTrack";
-            DisableTrack.Size = new Size(102, 23);
+            DisableTrack.Size = new Size(121, 23);
             DisableTrack.TabIndex = 11;
             DisableTrack.Text = "Disable Tracking";
             DisableTrack.UseVisualStyleBackColor = true;
@@ -185,7 +187,7 @@
             // 
             RmNableBut.Location = new Point(12, 623);
             RmNableBut.Name = "RmNableBut";
-            RmNableBut.Size = new Size(102, 23);
+            RmNableBut.Size = new Size(121, 23);
             RmNableBut.TabIndex = 0;
             RmNableBut.Text = "Enable Remote";
             RmNableBut.UseVisualStyleBackColor = true;
@@ -195,7 +197,7 @@
             // 
             RmDsblBut.Location = new Point(12, 623);
             RmDsblBut.Name = "RmDsblBut";
-            RmDsblBut.Size = new Size(102, 23);
+            RmDsblBut.Size = new Size(121, 23);
             RmDsblBut.TabIndex = 14;
             RmDsblBut.Text = "Disable Remote";
             RmDsblBut.UseVisualStyleBackColor = true;
@@ -213,11 +215,23 @@
             remoteField.Click += remoteField_Click;
             remoteField.MouseMove += remoteField_MouseMove;
             // 
+            // numericUpDown1
+            // 
+            numericUpDown1.Location = new Point(139, 623);
+            numericUpDown1.Maximum = new decimal(new int[] { 5, 0, 0, 0 });
+            numericUpDown1.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDown1.Name = "numericUpDown1";
+            numericUpDown1.Size = new Size(37, 23);
+            numericUpDown1.TabIndex = 15;
+            numericUpDown1.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDown1.ValueChanged += numericUpDown1_ValueChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1072, 665);
+            Controls.Add(numericUpDown1);
             Controls.Add(RmDsblBut);
             Controls.Add(RmNableBut);
             Controls.Add(remoteField);
@@ -243,6 +257,7 @@
             Load += Form1_Load;
             KeyDown += Form1_KeyDown;
             ((System.ComponentModel.ISupportInitialize)frameDisplay).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -266,5 +281,6 @@
         private Button RmNableBut;
         private Button RmDsblBut;
         private Panel remoteField;
+        private NumericUpDown numericUpDown1;
     }
 }

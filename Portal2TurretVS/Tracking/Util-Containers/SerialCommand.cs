@@ -6,7 +6,7 @@ public class SerialCommand //payload class (this is what we will be using to hol
     CENTER = C;
     STOP = N;
     SWEEP = S;
-    MOVE = M:[pan]x[tilt];
+    MOVE = M:[pan]x[tilt]x[gain];
 
     Here pan and tilt are int values casted to characters when transmitted
 
@@ -31,29 +31,34 @@ public class SerialCommand //payload class (this is what we will be using to hol
         cmd = '0';
         pan = 0;
         tilt = 0;
+        gain = 0;
     }
     public SerialCommand(char Cmd)
     {
         cmd = Cmd;
         pan = 0;
         tilt = 0;
+        gain = 0;
     }
 
-    public SerialCommand(char Cmd, int panDegrees, int tiltDegrees)
+    public SerialCommand(char Cmd, int panDegrees, int tiltDegrees, int setGain)
     {
         cmd = Cmd;
         pan = panDegrees;
         tilt = tiltDegrees;
+        gain = setGain;
     }
 
     public string getString()
     {
-        return cmd + ":" + pan + "x" + tilt;
+        return cmd + ":" + pan + "x" + tilt + "x" + gain;
     }
 
     private int pan{get;}
     private int tilt{get;}
+    private int gain{get;}
     private char cmd{get;}
+    
     // public bool centered{get;set;}
     
 }

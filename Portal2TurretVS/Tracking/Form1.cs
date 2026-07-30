@@ -96,16 +96,24 @@ namespace Tracking
             _streamThread?.IsBackground = true;
             _captureThread?.IsBackground = true;
 
-
-
             UpdateTrackStatus(false);
+            LoadModel();
+            if (_currModel != null)
+            {
+                Preprocessing.performWarmupInferencing(ref _currModel);
+            }
+            setupSerialControlConnect();
+            startUpStatePolling();
+        }
+
+        private void LoadModel()
+        {
             //_modelPath = "..\\..\\..\\assets\\yolo26n.onnx"; //relative file path from the project executable. 
             _modelPath = Path.Combine(AppContext.BaseDirectory, "assets", "yolo26n.onnx"); //file pathing when asset folder exists at location of .exe output
             try
             {
                 using var options = SessionOptions.MakeSessionOptionWithCudaProvider(0);
                 _currModel = new InferenceSession(_modelPath, options);
-
             }   // use CUDA
             catch
             {
@@ -113,14 +121,10 @@ namespace Tracking
                 _currModel = new InferenceSession(_modelPath);
             }   // fallback and use CPU    
 
+        }
 
-            if (_currModel != null)
-            {
-                Preprocessing.performWarmupInferencing(ref _currModel);
-            }
-
-
-
+        private void setupSerialControlConnect()
+        {
             PortDropDown.DataSource = SerialPort.GetPortNames();
             BaudDropDown.DataSource = _baudRates;
             try { PortDropDown.SelectedIndex = 0; } catch { PortDropDown.SelectedIndex = -1; }
@@ -128,7 +132,11 @@ namespace Tracking
             _ardConnected = false;
             UpdateArduinoStatus(false);
             UpdateRemoteStatus(false);
+        }
 
+        private void startUpStatePolling()
+        {
+            _stateVar.movementGain = (int)numericUpDown1.Value;
             _stateThread = new Thread(new ThreadStart(stateMachine));
             _stateOperate = true;
             _stateThread.Start();
@@ -201,10 +209,12 @@ namespace Tracking
 
             if (_stateVar == null || _stateVar.cameraCalibration == null) { return false; }
 
-            _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
-            _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
-            _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded value
-            _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded value
+
+            _stateVar.cameraCalibration = new CameraCalib(_srcFrame.Height, _srcFrame.Width, 33.836, 56.068);
+            // _stateVar.cameraCalibration.imgFrameH = _srcFrame.Height;
+            // _stateVar.cameraCalibration.imgFrameW = _srcFrame.Width;
+            // _stateVar.cameraCalibration.VertFOV = 33.836; //hard coded value
+            // _stateVar.cameraCalibration.HoriFOV = 56.068; //hard coded value
 
             return true;
         }
@@ -520,7 +530,7 @@ namespace Tracking
                         // Console.WriteLine("IMG center cooords located at: " + centerPt.X + ", " + centerPt.Y + "--> Current Det coords located at: " + placeholder.boxCenter.X + ", " + placeholder.boxCenter.Y);
                         // Console.WriteLine("delta X: " + (placeholder.boxCenter.X - centerPt.X) + " delta Y: " + (centerPt.Y-placeholder.boxCenter.Y ));
 
-                        _stateVar.serialPayload = CameraProcessing.calcBoxTravel(_stateVar.cameraCalibration, placeholder.boxCenter);
+                        _stateVar.serialPayload = CameraProcessing.calcBoxTravel(ref _stateVar, placeholder.boxCenter);
                         Console.WriteLine("Computed PanxTilt serial data: |" + _stateVar.serialPayload.getString() + "|");
 
                     }
@@ -548,5 +558,6 @@ namespace Tracking
 
 
         }
+
     }
 }

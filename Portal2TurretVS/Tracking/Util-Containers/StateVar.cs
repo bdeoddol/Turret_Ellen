@@ -19,6 +19,7 @@ public class StateVar
         searchDebounceLimMS = 1000;
         debounce = false;
         cycleCurrIdx = 0;
+        movementGain = 0;
         
     }
     
@@ -48,6 +49,7 @@ public class StateVar
     public CameraCalib cameraCalibration {get;set;} //the state variable will have a camera initialization which holds all the camera calibrations
     public bool centered{get;set;}
     public SerialCommand serialPayload{get;set;}
+    public int movementGain{get;set;}
 
 
     public bool NoActiveTargets() => ActiveTargets.IsEmpty;

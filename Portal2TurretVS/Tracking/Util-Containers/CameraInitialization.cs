@@ -12,7 +12,7 @@ public class CameraCalib //holds our camera calibrations
         HoriFOV = -1;
     }
 
-    public CameraCalib(int imgHeight, int imgWidth, int imgVertFOV, int imgHoriFOV)
+    public CameraCalib(int imgHeight, int imgWidth, double imgVertFOV, double imgHoriFOV)
     {
         imgFrameH = imgHeight;
         imgFrameW = imgWidth;

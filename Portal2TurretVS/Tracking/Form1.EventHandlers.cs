@@ -248,6 +248,8 @@ namespace Tracking
                 RmDsblBut.Enabled = false;
                 RmDsblBut.Visible = false;
                 _remoteFieldEngaged = false;
+                numericUpDown1.Enabled = false;
+                numericUpDown1.Visible = false;
                 remoteField.Enabled = false;
                 remoteField.Visible = false;
                 return;
@@ -258,6 +260,8 @@ namespace Tracking
             RmDsblBut.Enabled = status;
             RmDsblBut.Visible = status;
             _remoteFieldEngaged = false;
+            numericUpDown1.Enabled = status;
+            numericUpDown1.Visible = status;
             remoteField.Enabled = false; //for debug, set to "status"
             remoteField.Visible = false; //for debug, ,set to "status"
             return;
@@ -302,11 +306,16 @@ namespace Tracking
                 // Console.WriteLine("Cursor Position: " + cursorPosition.X + "x" + cursorPosition.Y);
 
                 //update serial command
-                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);
+                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(ref _stateVar, remoteFieldCenterOPCV, cursorPosition);
                 //recenter
                 Cursor.Position = _remoteFieldCenter;
             }
 
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            _stateVar.movementGain = (int)numericUpDown1.Value;
         }
 
 
@@ -354,7 +363,7 @@ namespace Tracking
                 // Console.WriteLine("Cursor Position: " + cursorPosition.X + "x" + cursorPosition.Y);
 
                 //update serial command
-                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(_stateVar.cameraCalibration, remoteFieldCenterOPCV, cursorPosition);
+                _stateVar.serialPayload = CameraProcessing.calcCursorTravel(ref _stateVar, remoteFieldCenterOPCV, cursorPosition);
                 //recenter
                 Cursor.Position = _remoteFieldCenter;
             }
