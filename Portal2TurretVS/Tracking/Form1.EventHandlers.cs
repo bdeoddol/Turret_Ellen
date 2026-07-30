@@ -258,8 +258,8 @@ namespace Tracking
             RmDsblBut.Enabled = status;
             RmDsblBut.Visible = status;
             _remoteFieldEngaged = false;
-            remoteField.Enabled = false; //for debug
-            remoteField.Visible = false; //for debug
+            remoteField.Enabled = false; //for debug, set to "status"
+            remoteField.Visible = false; //for debug, ,set to "status"
             return;
         }
 
