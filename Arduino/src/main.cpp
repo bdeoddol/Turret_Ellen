@@ -17,12 +17,10 @@ void setup()
   panServo.attach(7);
   tiltServo.attach(6);
 
-  servoState.panPos = 120;
-  servoState.tiltPos = 39;
-  servoState.sens = 5;
-
-  panServo.write(servoState.panPos);
-  tiltServo.write(servoState.tiltPos);
+  servoState.setPanPos(120);
+  servoState.setTiltPos(39);
+  panServo.write(servoState.getPanPos());
+  tiltServo.write(servoState.getTiltPos());
 
   
 }
@@ -34,22 +32,23 @@ void loop()
     if(processByte(Serial.read(), serBuff) == true){ //process 1 byte in the serial buffer, return true if a string has been completed
       Cmd = parseSerialData(serBuff.getString()); //parse the completed string, copy the returned contents member by member 
       if(Cmd.getCmdAsChar() == 'C'){ 
-        panServo.write(90);
-        tiltServo.write(90);
+        servoState.setPanPos(90);
+        servoState.setTiltPos(90);
 
-        servoState.panPos = 90;
-        servoState.tiltPos = 90;
+        panServo.write(servoState.getPanPos());
+        tiltServo.write(servoState.getTiltPos());
       }
       else if(Cmd.getCmdAsChar() == 'S'){
 
       }
       else if (Cmd.getCmdAsChar() == 'M') {
-        servoState.panPos = constrain(servoState.panPos + (int)(Cmd.getPan() * Cmd.getGain()),10, 170);
+        int NewPanPos = constrain(servoState.getPanPos() + (int)(Cmd.getPan() * Cmd.getGain()),10, 170);
+        int NewTiltPos = constrain(servoState.getTiltPos() + (int)(Cmd.getTilt() * Cmd.getGain()),10, 170);
+        servoState.setPanPos(NewPanPos);
+        servoState.setTiltPos(NewTiltPos);
 
-        servoState.tiltPos = constrain(servoState.tiltPos + (int)(Cmd.getTilt() * Cmd.getGain()),10, 170);
-
-        panServo.write(servoState.panPos);
-        tiltServo.write(servoState.tiltPos);
+        panServo.write(servoState.getTiltPos());
+        tiltServo.write(servoState.getTiltPos());
       }
       else if(Cmd.getCmdAsChar() == (NULL || 'P')){
         //do nothing, no movement

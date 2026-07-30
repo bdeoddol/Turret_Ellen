@@ -23,35 +23,40 @@ SerialCommand parseSerialData(String data) {
 }
 
 SerialCommand::SerialCommand(){
-  SerCmd = NULL;
-  pan = 0;
-  tilt = 0;
+  _SerCmd = NULL;
+  _pan = 0;
+  _tilt = 0;
 }
 
 SerialCommand::SerialCommand(char cmd, int dX, int dY, int setGain){
-  SerCmd = cmd;
-  pan = dX;
-  tilt = dY;
-  gain = setGain;
+  _SerCmd = cmd;
+  _pan = dX;
+  _tilt = dY;
+  _gain = setGain;
 }
 
 char SerialCommand::getCmdAsChar() const{
-  return SerCmd;
+  return _SerCmd;
 }
 
 int SerialCommand::getPan() const{
-  return pan;
+  return _pan;
 }
 
 int SerialCommand::getTilt() const{
-  return tilt;
+  return _tilt;
 }
 
 int SerialCommand::getGain() const{
-  return gain;
+  return _gain;
 }
 
 SerialTurrState::SerialTurrState(){
-  tiltPos = 0;
-  panPos = 0;
+  _tiltPos = 0;
+  _panPos = 0;
 }
+
+int SerialTurrState::getPanPos(){ return _panPos;}
+int SerialTurrState::getTiltPos(){ return _tiltPos;}
+void SerialTurrState::setPanPos(int value){_panPos = value; return;}
+void SerialTurrState::setTiltPos(int value){_tiltPos = value; return;}

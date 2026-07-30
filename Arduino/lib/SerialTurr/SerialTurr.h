@@ -9,10 +9,10 @@ class SerialCommand{
     int getGain() const;
     char getCmdAsChar() const;
     private:
-    int tilt;
-    int pan;
-    int gain;
-    char SerCmd;
+    int _tilt;
+    int _pan;
+    int _gain;
+    char _SerCmd;
 
 
 };
@@ -22,7 +22,12 @@ SerialCommand parseSerialData(String data);
 class SerialTurrState{
     public:
     SerialTurrState();
-    int tiltPos;
-    int panPos;
-    int sens;
+    int getPanPos();
+    int getTiltPos();
+    void setPanPos(int value);
+    void setTiltPos(int value);
+
+    private:
+    int _tiltPos;
+    int _panPos;
 };
