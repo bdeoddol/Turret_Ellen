@@ -40,19 +40,19 @@ void loop()
         servoState.panPos = 90;
         servoState.tiltPos = 90;
       }
-      else if(Cmd.getCmdAsChar() == 'P'){
-
-      }
       else if(Cmd.getCmdAsChar() == 'S'){
 
       }
       else if (Cmd.getCmdAsChar() == 'M') {
-        servoState.panPos = constrain(servoState.panPos + (int)(Cmd.getPan() * servoState.sens),0, 180);
+        servoState.panPos = constrain(servoState.panPos + (int)(Cmd.getPan() * Cmd.getGain()),10, 170);
 
-        servoState.tiltPos = constrain(servoState.tiltPos + (int)(Cmd.getTilt() * servoState.sens),0, 180);
+        servoState.tiltPos = constrain(servoState.tiltPos + (int)(Cmd.getTilt() * Cmd.getGain()),10, 170);
 
         panServo.write(servoState.panPos);
         tiltServo.write(servoState.tiltPos);
+      }
+      else if(Cmd.getCmdAsChar() == (NULL || 'P')){
+        //do nothing, no movement
       }
     
     }

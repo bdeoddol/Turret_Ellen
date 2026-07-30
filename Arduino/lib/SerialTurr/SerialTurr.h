@@ -2,14 +2,16 @@
 
 class SerialCommand{
     public: 
-    SerialCommand(char cmd, int dX, int dY);
+    SerialCommand(char cmd, int dX, int dY, int setGain);
     SerialCommand();
     int getPan() const;
     int getTilt() const;
+    int getGain() const;
     char getCmdAsChar() const;
     private:
     int tilt;
     int pan;
+    int gain;
     char SerCmd;
 
 
